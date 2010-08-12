@@ -1,32 +1,28 @@
 /*
- * Copyright 2005-2006 Sun Microsystems, Inc.  All Rights Reserved.
- * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
+ * JBoss, Home of Professional Open Source.
+ * Copyright 2010, Red Hat, Inc., and individual contributors
+ * as indicated by the @author tags. See the copyright.txt file in the
+ * distribution for a full listing of individual contributors.
  *
- * This code is free software; you can redistribute it and/or modify it
- * under the terms of the GNU General Public License version 2 only, as
- * published by the Free Software Foundation.  Sun designates this
- * particular file as subject to the "Classpath" exception as provided
- * by Sun in the LICENSE file that accompanied this code.
+ * This is free software; you can redistribute it and/or modify it
+ * under the terms of the GNU Lesser General Public License as
+ * published by the Free Software Foundation; either version 2.1 of
+ * the License, or (at your option) any later version.
  *
- * This code is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
- * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License
- * version 2 for more details (a copy is included in the LICENSE file that
- * accompanied this code).
+ * This software is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ * Lesser General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License version
- * 2 along with this work; if not, write to the Free Software Foundation,
- * Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
- *
- * Please contact Sun Microsystems, Inc., 4150 Network Circle, Santa Clara,
- * CA 95054 USA or visit www.sun.com if you need additional information or
- * have any questions.
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this software; if not, write to the Free
+ * Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
+ * 02110-1301 USA, or see the FSF site: http://www.fsf.org.
  */
 
 package sun.net.httpserver;
 
-import com.sun.net.httpserver.*;
-import com.sun.net.httpserver.spi.*;
+import java.security.PrivilegedAction;
 
 /**
  * Parameters that users will not likely need to set
@@ -59,42 +55,42 @@ class ServerConfig {
     static {
 
         idleInterval = ((Long)java.security.AccessController.doPrivileged(
-                new sun.security.action.GetLongAction(
+                new GetLongAction(
                 "sun.net.httpserver.idleInterval",
                 defaultIdleInterval))).longValue() * 1000;
 
         clockTick = ((Integer)java.security.AccessController.doPrivileged(
-                new sun.security.action.GetIntegerAction(
+                new GetIntegerAction(
                 "sun.net.httpserver.clockTick",
                 defaultClockTick))).intValue();
 
         maxIdleConnections = ((Integer)java.security.AccessController.doPrivileged(
-                new sun.security.action.GetIntegerAction(
+                new GetIntegerAction(
                 "sun.net.httpserver.maxIdleConnections",
                 defaultMaxIdleConnections))).intValue();
 
         readTimeout = ((Long)java.security.AccessController.doPrivileged(
-                new sun.security.action.GetLongAction(
+                new GetLongAction(
                 "sun.net.httpserver.readTimeout",
                 defaultReadTimeout))).longValue()* 1000;
 
         selCacheTimeout = ((Long)java.security.AccessController.doPrivileged(
-                new sun.security.action.GetLongAction(
+                new GetLongAction(
                 "sun.net.httpserver.selCacheTimeout",
                 defaultSelCacheTimeout))).longValue()* 1000;
 
         writeTimeout = ((Long)java.security.AccessController.doPrivileged(
-                new sun.security.action.GetLongAction(
+                new GetLongAction(
                 "sun.net.httpserver.writeTimeout",
                 defaultWriteTimeout))).longValue()* 1000;
 
         drainAmount = ((Long)java.security.AccessController.doPrivileged(
-                new sun.security.action.GetLongAction(
+                new GetLongAction(
                 "sun.net.httpserver.drainAmount",
                 defaultDrainAmount))).longValue();
 
         debug = ((Boolean)java.security.AccessController.doPrivileged(
-                new sun.security.action.GetBooleanAction(
+                new GetBooleanAction(
                 "sun.net.httpserver.debug"))).booleanValue();
     }
 
@@ -128,5 +124,50 @@ class ServerConfig {
 
     static long getDrainAmount () {
         return drainAmount;
+    }
+
+    private static class GetLongAction implements PrivilegedAction<Long> {
+
+        private final String property;
+
+        private final long defaultVal;
+
+        public GetLongAction(final String property, final long defaultVal) {
+            this.property = property;
+            this.defaultVal = defaultVal;
+        }
+
+        public Long run() {
+            return Long.getLong(property, defaultVal);
+        }
+    }
+
+    private static class GetIntegerAction implements PrivilegedAction<Integer> {
+
+        private final String property;
+
+        private final int defaultVal;
+
+        public GetIntegerAction(final String property, final int defaultVal) {
+            this.property = property;
+            this.defaultVal = defaultVal;
+        }
+
+        public Integer run() {
+            return Integer.getInteger(property, defaultVal);
+        }
+    }
+
+    private static class GetBooleanAction implements PrivilegedAction<Boolean> {
+
+        private final String property;
+
+        public GetBooleanAction(final String property) {
+            this.property = property;
+        }
+
+        public Boolean run() {
+            return Boolean.valueOf(Boolean.getBoolean(property));
+        }
     }
 }

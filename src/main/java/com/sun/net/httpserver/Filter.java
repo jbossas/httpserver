@@ -25,12 +25,11 @@
 
 package com.sun.net.httpserver;
 
-import java.net.*;
-import java.io.*;
-import java.nio.*;
-import java.nio.channels.*;
-import sun.net.www.MessageHeader;
-import java.util.*;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.util.List;
+import java.util.ListIterator;
 
 /**
  * A filter used to pre- and post-process incoming requests. Pre-processing occurs

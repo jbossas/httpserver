@@ -25,16 +25,29 @@
 
 package sun.net.httpserver;
 
-import java.io.*;
-import java.nio.*;
-import java.nio.channels.*;
-import java.net.*;
-import javax.net.ssl.*;
-import java.util.*;
-import java.text.*;
-import sun.net.www.MessageHeader;
-import com.sun.net.httpserver.*;
-import com.sun.net.httpserver.spi.*;
+import java.io.BufferedOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.net.InetAddress;
+import java.net.InetSocketAddress;
+import java.net.Socket;
+import java.net.URI;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
+import java.util.Date;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Set;
+import java.util.TimeZone;
+
+import com.sun.net.httpserver.Headers;
+import com.sun.net.httpserver.HttpExchange;
+import com.sun.net.httpserver.HttpPrincipal;
+
+import javax.net.ssl.SSLEngine;
+import javax.net.ssl.SSLSession;
 
 class ExchangeImpl {
 

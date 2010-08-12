@@ -24,9 +24,6 @@
  */
 
 package com.sun.net.httpserver;
-import java.net.*;
-import java.io.*;
-import java.util.*;
 
 /**
  * BasicAuthenticator provides an implementation of HTTP Basic

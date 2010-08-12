@@ -24,9 +24,9 @@
  */
 
 package com.sun.net.httpserver;
-import java.net.*;
-import java.io.*;
-import java.util.*;
+
+import java.net.InetSocketAddress;
+
 import javax.net.ssl.SSLParameters;
 
 /**

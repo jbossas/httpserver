@@ -25,15 +25,12 @@
 
 package sun.net.httpserver;
 
-import com.sun.net.httpserver.*;
-import java.io.*;
-import java.nio.*;
-import java.nio.channels.*;
-import sun.net.www.MessageHeader;
-import java.util.*;
-import javax.security.auth.*;
-import javax.security.auth.callback.*;
-import javax.security.auth.login.*;
+import java.io.IOException;
+import java.io.InputStream;
+
+import com.sun.net.httpserver.Authenticator;
+import com.sun.net.httpserver.Filter;
+import com.sun.net.httpserver.HttpExchange;
 
 public class AuthFilter extends Filter {
 

@@ -24,9 +24,9 @@
  */
 
 package com.sun.net.httpserver;
-import java.net.*;
-import java.io.*;
-import java.util.*;
+
+import java.util.List;
+import java.util.Map;
 
 /**
  * HttpContext represents a mapping between the root URI path of an application

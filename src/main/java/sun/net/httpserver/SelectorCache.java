@@ -25,12 +25,12 @@
 
 package sun.net.httpserver;
 
-import java.util.*;
-import java.nio.*;
-import java.net.*;
-import java.io.*;
-import java.security.*;
-import java.nio.channels.*;
+import java.io.IOException;
+import java.nio.channels.Selector;
+import java.security.AccessController;
+import java.security.PrivilegedAction;
+import java.util.LinkedList;
+import java.util.ListIterator;
 
 /*
  * Implements a cache of java.nio.channels.Selector

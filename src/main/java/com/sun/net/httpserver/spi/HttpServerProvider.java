@@ -25,16 +25,16 @@
 
 package com.sun.net.httpserver.spi;
 
-import java.io.FileDescriptor;
 import java.io.IOException;
-import java.net.*;
+import java.net.InetSocketAddress;
 import java.security.AccessController;
 import java.security.PrivilegedAction;
 import java.util.Iterator;
-import sun.misc.Service;
-import sun.misc.ServiceConfigurationError;
-import sun.security.action.GetPropertyAction;
-import com.sun.net.httpserver.*;
+import java.util.ServiceLoader;
+import java.util.ServiceConfigurationError;
+
+import com.sun.net.httpserver.HttpServer;
+import com.sun.net.httpserver.HttpsServer;
 
 /**
  * Service provider class for HttpServer.
@@ -86,24 +86,28 @@ public abstract class HttpServerProvider {
             provider = (HttpServerProvider)c.newInstance();
             return true;
         } catch (ClassNotFoundException x) {
-            throw new ServiceConfigurationError(x);
+            throw configError(x);
         } catch (IllegalAccessException x) {
-            throw new ServiceConfigurationError(x);
+            throw configError(x);
         } catch (InstantiationException x) {
-            throw new ServiceConfigurationError(x);
+            throw configError(x);
         } catch (SecurityException x) {
-            throw new ServiceConfigurationError(x);
+            throw configError(x);
         }
     }
 
+    private static ServiceConfigurationError configError(final Throwable x) {
+        final ServiceConfigurationError error = new ServiceConfigurationError(x.getMessage());
+        error.initCause(x);
+        return error;
+    }
+
     private static boolean loadProviderAsService() {
-        Iterator i = Service.providers(HttpServerProvider.class,
-                                       ClassLoader.getSystemClassLoader());
-        for (;;) {
+        final ServiceLoader<HttpServerProvider> loader = ServiceLoader.load(HttpServerProvider.class, null);
+        final Iterator<HttpServerProvider> i = loader.iterator();
+        while (i.hasNext()) {
             try {
-                if (!i.hasNext())
-                    return false;
-                provider = (HttpServerProvider)i.next();
+                provider = i.next();
                 return true;
             } catch (ServiceConfigurationError sce) {
                 if (sce.getCause() instanceof SecurityException) {
@@ -113,6 +117,7 @@ public abstract class HttpServerProvider {
                 throw sce;
             }
         }
+        return false;
     }
 
     /**

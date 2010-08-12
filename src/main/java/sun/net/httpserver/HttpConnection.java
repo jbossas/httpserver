@@ -25,12 +25,16 @@
 
 package sun.net.httpserver;
 
-import java.io.*;
-import javax.net.ssl.*;
-import java.nio.channels.*;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.nio.channels.SelectionKey;
+import java.nio.channels.SocketChannel;
+
+import javax.net.ssl.SSLContext;
+import javax.net.ssl.SSLEngine;
+
 import java.util.logging.Logger;
-import com.sun.net.httpserver.*;
-import com.sun.net.httpserver.spi.*;
 
 /**
  * encapsulates all the connection specific state for a HTTP/S connection

@@ -24,11 +24,19 @@
  */
 
 package sun.net.httpserver;
-import java.io.*;
-import java.util.*;
+
+import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
+
+import com.sun.net.httpserver.Authenticator;
+import com.sun.net.httpserver.Filter;
+import com.sun.net.httpserver.HttpContext;
+import com.sun.net.httpserver.HttpHandler;
+import com.sun.net.httpserver.HttpServer;
+
 import java.util.logging.Logger;
-import com.sun.net.httpserver.*;
-import com.sun.net.httpserver.spi.*;
 
 /**
  * HttpContext represents a mapping between a protocol (http or https) together with a root URI path

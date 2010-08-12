@@ -25,9 +25,7 @@
 
 package sun.net.httpserver;
 
-import java.util.*;
-import com.sun.net.httpserver.*;
-import com.sun.net.httpserver.spi.*;
+import java.util.LinkedList;
 
 class ContextList {
 

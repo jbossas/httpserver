@@ -25,13 +25,11 @@
 
 package com.sun.net.httpserver;
 
-import java.io.*;
-import java.nio.*;
-import java.nio.channels.*;
-import java.net.*;
-import javax.net.ssl.*;
-import java.util.*;
-import sun.net.www.MessageHeader;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.net.InetSocketAddress;
+import java.net.URI;
 
 /**
  * This class encapsulates a HTTP request received and a

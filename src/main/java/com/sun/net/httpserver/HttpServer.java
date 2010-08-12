@@ -25,14 +25,11 @@
 
 package com.sun.net.httpserver;
 
-import java.net.*;
-import java.io.*;
-import java.nio.*;
-import java.security.*;
-import java.nio.channels.*;
-import java.util.*;
-import java.util.concurrent.*;
-import javax.net.ssl.*;
+import java.io.IOException;
+import java.net.BindException;
+import java.net.InetSocketAddress;
+import java.util.concurrent.Executor;
+
 import com.sun.net.httpserver.spi.HttpServerProvider;
 
 /**

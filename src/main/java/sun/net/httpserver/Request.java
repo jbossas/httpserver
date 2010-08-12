@@ -25,13 +25,17 @@
 
 package sun.net.httpserver;
 
-import java.util.*;
-import java.nio.*;
-import java.net.*;
-import java.io.*;
-import java.nio.channels.*;
-import com.sun.net.httpserver.*;
-import com.sun.net.httpserver.spi.*;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.net.SocketTimeoutException;
+import java.nio.BufferOverflowException;
+import java.nio.ByteBuffer;
+import java.nio.channels.SelectionKey;
+import java.nio.channels.Selector;
+import java.nio.channels.SocketChannel;
+
+import com.sun.net.httpserver.Headers;
 
 /**
  */

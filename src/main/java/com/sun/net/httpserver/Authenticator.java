@@ -24,9 +24,6 @@
  */
 
 package com.sun.net.httpserver;
-import java.net.*;
-import java.io.*;
-import java.util.*;
 
 /**
  * Authenticator represents an implementation of an HTTP authentication
