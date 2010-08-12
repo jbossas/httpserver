@@ -86,7 +86,7 @@ public class FixedLengthInputStream
     HttpServer startHttpServer() throws IOException {
         if (debug) {
             Logger logger =
-            Logger.getLogger("com.sun.net.httpserver.);
+            Logger.getLogger("com.sun.net.httpserver");
             Handler outHandler = new StreamHandler(System.out,
                                      new SimpleFormatter());
             outHandler.setLevel(Level.FINEST);
