@@ -14,6 +14,8 @@
         <version>5</version>
     </parent>
 
+    <name>Lightweight HTTP Server</name>
+
     <licenses>
         <license>
             <name>GPLv2 (with classpath exception)</name>
