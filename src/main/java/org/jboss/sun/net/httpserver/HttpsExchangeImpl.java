@@ -23,7 +23,7 @@
  * have any questions.
  */
 
-package sun.net.httpserver;
+package org.jboss.sun.net.httpserver;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -32,14 +32,16 @@ import java.net.InetSocketAddress;
 import java.net.URI;
 
 import com.sun.net.httpserver.Headers;
-import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpPrincipal;
+import com.sun.net.httpserver.HttpsExchange;
 
-class HttpExchangeImpl extends HttpExchange {
+import javax.net.ssl.SSLSession;
+
+class HttpsExchangeImpl extends HttpsExchange {
 
     ExchangeImpl impl;
 
-    HttpExchangeImpl (ExchangeImpl impl) {
+    HttpsExchangeImpl (ExchangeImpl impl) throws IOException {
         this.impl = impl;
     }
 
@@ -96,6 +98,10 @@ class HttpExchangeImpl extends HttpExchange {
 
     public String getProtocol (){
         return impl.getProtocol();
+    }
+
+    public SSLSession getSSLSession () {
+        return impl.getSSLSession ();
     }
 
     public Object getAttribute (String name) {

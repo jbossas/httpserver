@@ -1,5 +1,5 @@
 /*
- * Copyright 2005 Sun Microsystems, Inc.  All Rights Reserved.
+ * Copyright 2005-2008 Sun Microsystems, Inc.  All Rights Reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -23,19 +23,10 @@
  * have any questions.
  */
 
-package sun.net.httpserver;
+package org.jboss.sun.net.httpserver;
 
-class Event {
+import java.io.IOException;
 
-    ExchangeImpl exchange;
-
-    protected Event (ExchangeImpl t) {
-        this.exchange = t;
-    }
-}
-
-class WriteFinishedEvent extends Event {
-    WriteFinishedEvent (ExchangeImpl t) {
-        super (t);
-    }
+class StreamClosedException extends IOException {
+    private static final long serialVersionUID = -4485921499356327937L;
 }

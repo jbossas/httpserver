@@ -1,5 +1,5 @@
 /*
- * Copyright 2007 Sun Microsystems, Inc.  All Rights Reserved.
+ * Copyright 2005-2006 Sun Microsystems, Inc.  All Rights Reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -23,41 +23,59 @@
  * have any questions.
  */
 
-package sun.net.httpserver;
+package org.jboss.sun.net.httpserver;
 
 import java.io.FilterOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 
 /**
- * a class which allows the caller to write an indefinite
- * number of bytes to an underlying stream , but without using
- * chunked encoding. Used for http/1.0 clients only
- * The underlying connection needs to be closed afterwards.
+ * a class which allows the caller to write up to a defined
+ * number of bytes to an underlying stream. The caller *must*
+ * write the pre-defined number or else an exception will be thrown
+ * and the whole request aborted.
+ * normal close() does not close the underlying stream
  */
 
-class UndefLengthOutputStream extends FilterOutputStream
+class FixedLengthOutputStream extends FilterOutputStream
 {
+    private long remaining;
+    private boolean eof = false;
     private boolean closed = false;
     ExchangeImpl t;
 
-    UndefLengthOutputStream (ExchangeImpl t, OutputStream src) {
+    FixedLengthOutputStream (ExchangeImpl t, OutputStream src, long len) {
         super (src);
         this.t = t;
+        this.remaining = len;
     }
 
     public void write (int b) throws IOException {
         if (closed) {
             throw new IOException ("stream closed");
         }
+        eof = (remaining == 0);
+        if (eof) {
+            throw new StreamClosedException();
+        }
         out.write(b);
+        remaining --;
     }
 
     public void write (byte[]b, int off, int len) throws IOException {
         if (closed) {
             throw new IOException ("stream closed");
         }
+        eof = (remaining == 0);
+        if (eof) {
+            throw new StreamClosedException();
+        }
+        if (len > remaining) {
+            // stream is still open, caller can retry
+            throw new IOException ("too many bytes to write to stream");
+        }
         out.write(b, off, len);
+        remaining -= len;
     }
 
     public void close () throws IOException {
@@ -65,7 +83,12 @@ class UndefLengthOutputStream extends FilterOutputStream
             return;
         }
         closed = true;
+        if (remaining > 0) {
+            t.close();
+            throw new IOException ("insufficient bytes written to stream");
+        }
         flush();
+        eof = true;
         LeftOverInputStream is = t.getOriginalInputStream();
         if (!is.isClosed()) {
             try {

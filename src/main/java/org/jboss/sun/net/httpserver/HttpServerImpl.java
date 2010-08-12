@@ -23,7 +23,7 @@
  * have any questions.
  */
 
-package sun.net.httpserver;
+package org.jboss.sun.net.httpserver;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
@@ -31,29 +31,20 @@ import java.util.concurrent.Executor;
 
 import com.sun.net.httpserver.HttpContext;
 import com.sun.net.httpserver.HttpHandler;
-import com.sun.net.httpserver.HttpsConfigurator;
-import com.sun.net.httpserver.HttpsServer;
+import com.sun.net.httpserver.HttpServer;
 
-public class HttpsServerImpl extends HttpsServer {
+public class HttpServerImpl extends HttpServer {
 
     ServerImpl server;
 
-    HttpsServerImpl () throws IOException {
-        this (new InetSocketAddress(443), 0);
+    HttpServerImpl () throws IOException {
+        this (new InetSocketAddress(80), 0);
     }
 
-    HttpsServerImpl (
+    HttpServerImpl (
         InetSocketAddress addr, int backlog
     ) throws IOException {
-        server = new ServerImpl (this, "https", addr, backlog);
-    }
-
-    public void setHttpsConfigurator (HttpsConfigurator config) {
-        server.setHttpsConfigurator (config);
-    }
-
-    public HttpsConfigurator getHttpsConfigurator () {
-        return server.getHttpsConfigurator();
+        server = new ServerImpl (this, "http", addr, backlog);
     }
 
     public void bind (InetSocketAddress addr, int backlog) throws IOException {

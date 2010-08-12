@@ -1,5 +1,5 @@
 /*
- * Copyright 2005 Sun Microsystems, Inc.  All Rights Reserved.
+ * Copyright 2005-2008 Sun Microsystems, Inc.  All Rights Reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -23,21 +23,15 @@
  * have any questions.
  */
 
-package sun.net.httpserver;
+package org.jboss.sun.net.httpserver;
 
-import java.io.IOException;
-import java.net.InetSocketAddress;
+/**
+ * A Http error
+ */
+class HttpError extends RuntimeException {
+    private static final long serialVersionUID = 8769596371344178179L;
 
-import com.sun.net.httpserver.HttpServer;
-import com.sun.net.httpserver.HttpsServer;
-import com.sun.net.httpserver.spi.HttpServerProvider;
-
-public class DefaultHttpServerProvider extends HttpServerProvider {
-    public HttpServer createHttpServer (InetSocketAddress addr, int backlog) throws IOException {
-        return new HttpServerImpl (addr, backlog);
-    }
-
-    public HttpsServer createHttpsServer (InetSocketAddress addr, int backlog) throws IOException {
-        return new HttpsServerImpl (addr, backlog);
+    public HttpError (String msg) {
+        super (msg);
     }
 }
