@@ -86,7 +86,8 @@ class ExchangeImpl {
     PlaceholderOutputStream uos_orig;
 
     boolean sentHeaders; /* true after response headers sent */
-    Map<String,Object> attributes;
+    Map<String,Object> contextAttributes;
+    Map<String,Object> connectionAttributes;
     int rcode = -1;
     HttpPrincipal principal;
     ServerImpl server;
@@ -325,20 +326,62 @@ class ExchangeImpl {
         if (name == null) {
             throw new NullPointerException ("null name parameter");
         }
-        if (attributes == null) {
-            attributes = getHttpContext().getAttributes();
+        if (contextAttributes == null) {
+            contextAttributes = getHttpContext().getAttributes();
         }
-        return attributes.get (name);
+        return contextAttributes.get (name);
+    }
+
+    public Object getAttribute(String name, HttpExchange.AttributeScope scope) {
+        if (scope == null) {
+            throw new NullPointerException("null scope parameter");
+        }
+        if (scope.equals(HttpExchange.AttributeScope.CONTEXT)) {
+            return getAttribute(name);
+        }
+
+        if (scope.equals(HttpExchange.AttributeScope.CONNECTION)) {
+            if (name == null) {
+                throw new NullPointerException("null name parameter");
+            }
+            if (connectionAttributes == null) {
+                connectionAttributes = connection.getAttributes();
+            }
+            return connectionAttributes.get(name);
+        }
+
+
+        throw new IllegalArgumentException("Invalid scope '" + scope.toString() + "' specified.");
     }
 
     public void setAttribute (String name, Object value) {
         if (name == null) {
             throw new NullPointerException ("null name parameter");
         }
-        if (attributes == null) {
-            attributes = getHttpContext().getAttributes();
+        if (contextAttributes == null) {
+            contextAttributes = getHttpContext().getAttributes();
         }
-        attributes.put (name, value);
+        contextAttributes.put (name, value);
+    }
+
+    public void setAttribute(String name, Object value, HttpExchange.AttributeScope scope) {
+        if (scope == null) {
+            throw new NullPointerException("null scope parameter");
+        }
+        if (scope.equals(HttpExchange.AttributeScope.CONTEXT)) {
+            setAttribute(name, value);
+        }
+        if (scope.equals(HttpExchange.AttributeScope.CONNECTION)) {
+            if (name == null) {
+                throw new NullPointerException("null name parameter");
+            }
+            if (connectionAttributes == null) {
+                connectionAttributes = connection.getAttributes();
+            }
+            connectionAttributes.put(name, value);
+        }
+
+        throw new IllegalArgumentException("Invalid scope '" + scope.toString() + "' specified.");
     }
 
     public void setStreams (InputStream i, OutputStream o) {

@@ -34,6 +34,8 @@ import java.nio.channels.SocketChannel;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLEngine;
 
+import java.util.HashMap;
+import java.util.Map;
 import java.util.logging.Logger;
 
 /**
@@ -62,6 +64,8 @@ class HttpConnection {
     int remaining;
     boolean closed = false;
     Logger logger;
+
+    private final Map<String,Object> attributes = new HashMap<String,Object>();
 
     public String toString() {
         String s = null;
@@ -184,4 +188,9 @@ class HttpConnection {
     HttpContextImpl getHttpContext () {
             return context;
     }
+
+    public Map<String, Object> getAttributes() {
+        return attributes;
+    }
+
 }

@@ -65,6 +65,10 @@ import java.net.URI;
 
 public abstract class HttpExchange {
 
+    public enum AttributeScope {
+        CONTEXT, CONNECTION
+    }
+
     protected HttpExchange () {
     }
 
@@ -222,6 +226,17 @@ public abstract class HttpExchange {
     public abstract Object getAttribute (String name) ;
 
     /**
+     * A version getAttribute that allows a scope to be specified.
+     *
+     * The default getAttribute implementation assumes CONTEXT scope.
+     *
+     * @param name the name of the attribute to retrieve
+     * @param scope the scope of the attribute, i.e. CONTEXT or CONNECTION
+     * @return the attribute object, or null if it does not exist
+     */
+    public abstract Object getAttribute(String name, AttributeScope scope);
+
+    /**
      * Filter modules may store arbitrary objects with HttpExchange
      * instances as an out-of-band communication mechanism. Other Filters
      * or the exchange handler may then access these objects.
@@ -234,6 +249,19 @@ public abstract class HttpExchange {
      * @throws NullPointerException if name is <code>null</code>
      */
     public abstract void setAttribute (String name, Object value) ;
+
+    /**
+     * A version of setAttribute that allows a scope to be specified.
+     * <p/>
+     * The default setAttribute implementation assumes CONTEXT scope.
+     *
+     * @param name  the name to associate with the attribute value
+     * @param value the object to store as the attribute value. <code>null</code>
+     *              value is permitted.
+     * @param scope the scope to store the attribute i.e. CONTEXT or CONNECTION
+     */
+    public abstract void setAttribute(String name, Object value, AttributeScope scope);
+
 
     /**
      * Used by Filters to wrap either (or both) of this exchange's InputStream
