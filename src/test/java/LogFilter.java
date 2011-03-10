@@ -28,10 +28,10 @@ import java.io.PrintStream;
 import java.text.DateFormat;
 import java.util.Date;
 
-import com.sun.net.httpserver.Filter;
-import com.sun.net.httpserver.Headers;
-import com.sun.net.httpserver.HttpContext;
-import com.sun.net.httpserver.HttpExchange;
+import org.jboss.com.sun.net.httpserver.Filter;
+import org.jboss.com.sun.net.httpserver.Headers;
+import org.jboss.com.sun.net.httpserver.HttpContext;
+import org.jboss.com.sun.net.httpserver.HttpExchange;
 
 class LogFilter extends Filter {
 

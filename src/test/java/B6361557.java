@@ -37,11 +37,11 @@ import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
-import com.sun.net.httpserver.Headers;
-import com.sun.net.httpserver.HttpContext;
-import com.sun.net.httpserver.HttpExchange;
-import com.sun.net.httpserver.HttpHandler;
-import com.sun.net.httpserver.HttpServer;
+import org.jboss.com.sun.net.httpserver.Headers;
+import org.jboss.com.sun.net.httpserver.HttpContext;
+import org.jboss.com.sun.net.httpserver.HttpExchange;
+import org.jboss.com.sun.net.httpserver.HttpHandler;
+import org.jboss.com.sun.net.httpserver.HttpServer;
 
 /**
  * The test simply opens 10,000 separate connections

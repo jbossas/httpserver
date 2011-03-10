@@ -23,7 +23,7 @@
  * have any questions.
  */
 
-package com.sun.net.httpserver;
+package org.jboss.com.sun.net.httpserver;
 
 /**
  * This class implements a simple HTTP host. A HttpHost may be "real" or "virtual".

@@ -23,7 +23,7 @@
  * have any questions.
  */
 
-package com.sun.net.httpserver.spi;
+package org.jboss.com.sun.net.httpserver.spi;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
@@ -33,8 +33,8 @@ import java.util.Iterator;
 import java.util.ServiceLoader;
 import java.util.ServiceConfigurationError;
 
-import com.sun.net.httpserver.HttpServer;
-import com.sun.net.httpserver.HttpsServer;
+import org.jboss.com.sun.net.httpserver.HttpServer;
+import org.jboss.com.sun.net.httpserver.HttpsServer;
 
 /**
  * Service provider class for HttpServer.

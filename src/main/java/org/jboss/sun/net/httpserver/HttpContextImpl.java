@@ -30,11 +30,11 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
-import com.sun.net.httpserver.Authenticator;
-import com.sun.net.httpserver.Filter;
-import com.sun.net.httpserver.HttpContext;
-import com.sun.net.httpserver.HttpHandler;
-import com.sun.net.httpserver.HttpServer;
+import org.jboss.com.sun.net.httpserver.Authenticator;
+import org.jboss.com.sun.net.httpserver.Filter;
+import org.jboss.com.sun.net.httpserver.HttpContext;
+import org.jboss.com.sun.net.httpserver.HttpHandler;
+import org.jboss.com.sun.net.httpserver.HttpServer;
 
 import java.util.logging.Logger;
 

@@ -29,9 +29,9 @@ import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.util.concurrent.Executor;
 
-import com.sun.net.httpserver.HttpContext;
-import com.sun.net.httpserver.HttpHandler;
-import com.sun.net.httpserver.HttpServer;
+import org.jboss.com.sun.net.httpserver.HttpContext;
+import org.jboss.com.sun.net.httpserver.HttpHandler;
+import org.jboss.com.sun.net.httpserver.HttpServer;
 
 public class HttpServerImpl extends HttpServer {
 

@@ -29,7 +29,7 @@
 
 import java.io.IOException;
 
-import com.sun.net.httpserver.HttpServer;
+import org.jboss.com.sun.net.httpserver.HttpServer;
 
 public class B6424196 {
 

@@ -34,8 +34,8 @@ import java.net.URL;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
-import com.sun.net.httpserver.HttpContext;
-import com.sun.net.httpserver.HttpServer;
+import org.jboss.com.sun.net.httpserver.HttpContext;
+import org.jboss.com.sun.net.httpserver.HttpServer;
 
 public class B6339483 {
 

@@ -35,8 +35,8 @@ import java.nio.channels.SocketChannel;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
-import com.sun.net.httpserver.HttpsConfigurator;
-import com.sun.net.httpserver.HttpsParameters;
+import org.jboss.com.sun.net.httpserver.HttpsConfigurator;
+import org.jboss.com.sun.net.httpserver.HttpsParameters;
 
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLEngine;

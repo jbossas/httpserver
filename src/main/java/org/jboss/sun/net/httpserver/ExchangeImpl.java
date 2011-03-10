@@ -42,9 +42,9 @@ import java.util.Map;
 import java.util.Set;
 import java.util.TimeZone;
 
-import com.sun.net.httpserver.Headers;
-import com.sun.net.httpserver.HttpExchange;
-import com.sun.net.httpserver.HttpPrincipal;
+import org.jboss.com.sun.net.httpserver.Headers;
+import org.jboss.com.sun.net.httpserver.HttpExchange;
+import org.jboss.com.sun.net.httpserver.HttpPrincipal;
 
 import javax.net.ssl.SSLEngine;
 import javax.net.ssl.SSLSession;

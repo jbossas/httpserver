@@ -31,7 +31,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import com.sun.net.httpserver.Headers;
+import org.jboss.com.sun.net.httpserver.Headers;
 
 class UnmodifiableHeaders extends Headers {
 

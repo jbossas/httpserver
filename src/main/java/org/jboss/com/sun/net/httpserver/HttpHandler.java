@@ -23,25 +23,23 @@
  * have any questions.
  */
 
-package com.sun.net.httpserver;
+package org.jboss.com.sun.net.httpserver;
 
-import javax.net.ssl.SSLSession;
+import java.io.IOException;
 
 /**
- * This class encapsulates a HTTPS request received and a
- * response to be generated in one exchange and defines
- * the extensions to HttpExchange that are specific to the HTTPS protocol.
+ * A handler which is invoked to process HTTP exchanges. Each
+ * HTTP exchange is handled by one of these handlers.
  * @since 1.6
  */
-
-public abstract class HttpsExchange extends HttpExchange {
-
-    protected HttpsExchange () {
-    }
-
+public interface HttpHandler {
     /**
-     * Get the SSLSession for this exchange.
-     * @return the SSLSession
+     * Handle the given request and generate an appropriate response.
+     * See {@link HttpExchange} for a description of the steps
+     * involved in handling an exchange.
+     * @param exchange the exchange containing the request from the
+     *      client and used to send the response
+     * @throws NullPointerException if exchange is <code>null</code>
      */
-    public abstract SSLSession getSSLSession ();
+    public abstract void handle (HttpExchange exchange) throws IOException;
 }

@@ -35,7 +35,7 @@ import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
 import java.nio.channels.SocketChannel;
 
-import com.sun.net.httpserver.Headers;
+import org.jboss.com.sun.net.httpserver.Headers;
 
 /**
  */

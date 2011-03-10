@@ -28,9 +28,9 @@ package org.jboss.sun.net.httpserver;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 
-import com.sun.net.httpserver.HttpServer;
-import com.sun.net.httpserver.HttpsServer;
-import com.sun.net.httpserver.spi.HttpServerProvider;
+import org.jboss.com.sun.net.httpserver.HttpServer;
+import org.jboss.com.sun.net.httpserver.HttpsServer;
+import org.jboss.com.sun.net.httpserver.spi.HttpServerProvider;
 
 public class DefaultHttpServerProvider extends HttpServerProvider {
     public HttpServer createHttpServer (InetSocketAddress addr, int backlog) throws IOException {

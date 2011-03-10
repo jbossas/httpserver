@@ -23,14 +23,14 @@
  * have any questions.
  */
 
-package com.sun.net.httpserver;
+package org.jboss.com.sun.net.httpserver;
 
 import java.io.IOException;
 import java.net.BindException;
 import java.net.InetSocketAddress;
 import java.util.concurrent.Executor;
 
-import com.sun.net.httpserver.spi.HttpServerProvider;
+import org.jboss.com.sun.net.httpserver.spi.HttpServerProvider;
 
 /**
  * This class implements a simple HTTP server. A HttpServer is bound to an IP address

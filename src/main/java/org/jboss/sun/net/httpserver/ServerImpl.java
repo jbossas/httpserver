@@ -48,13 +48,13 @@ import java.util.Timer;
 import java.util.TimerTask;
 import java.util.concurrent.Executor;
 
-import com.sun.net.httpserver.Filter;
-import com.sun.net.httpserver.Headers;
-import com.sun.net.httpserver.HttpContext;
-import com.sun.net.httpserver.HttpExchange;
-import com.sun.net.httpserver.HttpHandler;
-import com.sun.net.httpserver.HttpServer;
-import com.sun.net.httpserver.HttpsConfigurator;
+import org.jboss.com.sun.net.httpserver.Filter;
+import org.jboss.com.sun.net.httpserver.Headers;
+import org.jboss.com.sun.net.httpserver.HttpContext;
+import org.jboss.com.sun.net.httpserver.HttpExchange;
+import org.jboss.com.sun.net.httpserver.HttpHandler;
+import org.jboss.com.sun.net.httpserver.HttpServer;
+import org.jboss.com.sun.net.httpserver.HttpsConfigurator;
 
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLEngine;

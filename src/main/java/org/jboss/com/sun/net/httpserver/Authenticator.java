@@ -23,7 +23,7 @@
  * have any questions.
  */
 
-package com.sun.net.httpserver;
+package org.jboss.com.sun.net.httpserver;
 
 /**
  * Authenticator represents an implementation of an HTTP authentication
