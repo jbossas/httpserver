@@ -111,15 +111,7 @@ class HttpExchangeImpl extends HttpExchange {
     }
 
     public void setAttribute(String name, Object value, HttpExchange.AttributeScope scope) {
-        if (scope.equals(HttpExchange.AttributeScope.CONTEXT)) {
-            setAttribute(name, value);
-        }
-
-        if (scope.equals(HttpExchange.AttributeScope.CONNECTION)) {
-
-        }
-
-        throw new IllegalArgumentException("Invalid scope '" + scope.toString() + "' specified.");
+        impl.setAttribute(name, value, scope);
     }
 
 
