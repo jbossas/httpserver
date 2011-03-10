@@ -32,6 +32,8 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.SocketChannel;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.logging.Logger;
 
 /**
@@ -65,6 +67,7 @@ class HttpConnection {
 
     public enum State {IDLE, REQUEST, RESPONSE};
     volatile State state;
+    private final Map<String,Object> attributes = new HashMap<String,Object>();
 
     public String toString() {
         String s = null;
@@ -195,4 +198,9 @@ class HttpConnection {
     HttpContextImpl getHttpContext () {
             return context;
     }
+
+    public Map<String, Object> getAttributes() {
+        return attributes;
+    }
+
 }

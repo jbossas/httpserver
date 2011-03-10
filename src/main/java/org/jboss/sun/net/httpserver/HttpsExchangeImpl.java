@@ -33,6 +33,7 @@ import java.net.InetSocketAddress;
 import java.net.URI;
 
 import org.jboss.com.sun.net.httpserver.Headers;
+import org.jboss.com.sun.net.httpserver.HttpExchange;
 import org.jboss.com.sun.net.httpserver.HttpPrincipal;
 import org.jboss.com.sun.net.httpserver.HttpsExchange;
 
@@ -104,11 +105,19 @@ class HttpsExchangeImpl extends HttpsExchange {
     }
 
     public Object getAttribute (String name) {
-        return impl.getAttribute (name);
+        return impl.getAttribute(name);
+    }
+
+    public Object getAttribute(String name, HttpExchange.AttributeScope scope) {
+        return impl.getAttribute(name, scope);
     }
 
     public void setAttribute (String name, Object value) {
         impl.setAttribute (name, value);
+    }
+
+    public void setAttribute(String name, Object value, HttpExchange.AttributeScope scope) {
+        impl.setAttribute(name, value);
     }
 
     public void setStreams (InputStream i, OutputStream o) {

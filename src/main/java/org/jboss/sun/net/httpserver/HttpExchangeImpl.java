@@ -102,9 +102,26 @@ class HttpExchangeImpl extends HttpExchange {
         return impl.getAttribute (name);
     }
 
+    public Object getAttribute(String name, HttpExchange.AttributeScope scope) {
+        return impl.getAttribute(name, scope);
+    }
+
     public void setAttribute (String name, Object value) {
         impl.setAttribute (name, value);
     }
+
+    public void setAttribute(String name, Object value, HttpExchange.AttributeScope scope) {
+        if (scope.equals(HttpExchange.AttributeScope.CONTEXT)) {
+            setAttribute(name, value);
+        }
+
+        if (scope.equals(HttpExchange.AttributeScope.CONNECTION)) {
+
+        }
+
+        throw new IllegalArgumentException("Invalid scope '" + scope.toString() + "' specified.");
+    }
+
 
     public void setStreams (InputStream i, OutputStream o) {
         impl.setStreams (i, o);
