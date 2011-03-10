@@ -379,9 +379,9 @@ class ExchangeImpl {
                 connectionAttributes = connection.getAttributes();
             }
             connectionAttributes.put(name, value);
+        } else {
+            throw new IllegalArgumentException("Invalid scope '" + scope.toString() + "' specified.");
         }
-
-        throw new IllegalArgumentException("Invalid scope '" + scope.toString() + "' specified.");
     }
 
     public void setStreams (InputStream i, OutputStream o) {
