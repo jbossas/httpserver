@@ -4,9 +4,9 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
-    <groupId>com.sun.httpserver</groupId>
+    <groupId>org.jboss.com.sun.httpserver</groupId>
     <artifactId>httpserver</artifactId>
-    <version>20100812-JBoss</version>
+    <version>1.0.0.Beta1-SNAPSHOT</version>
 
     <parent>
         <groupId>org.jboss</groupId>
