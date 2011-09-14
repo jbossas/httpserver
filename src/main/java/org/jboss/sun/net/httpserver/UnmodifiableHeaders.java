@@ -25,8 +25,13 @@
 
 package org.jboss.sun.net.httpserver;
 
-import java.util.*;
-import com.sun.net.httpserver.*;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+
+import org.jboss.com.sun.net.httpserver.Headers;
 
 class UnmodifiableHeaders extends Headers {
 

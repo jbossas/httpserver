@@ -21,13 +21,21 @@
  * questions.
  */
 
-import java.util.*;
-import java.util.concurrent.*;
-import java.io.*;
-import java.net.*;
-import java.security.*;
-import javax.net.ssl.*;
-import com.sun.net.httpserver.*;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.io.PrintStream;
+import java.net.InetSocketAddress;
+import java.net.URI;
+import java.util.concurrent.Executors;
+
+import org.jboss.com.sun.net.httpserver.Headers;
+import org.jboss.com.sun.net.httpserver.HttpContext;
+import org.jboss.com.sun.net.httpserver.HttpExchange;
+import org.jboss.com.sun.net.httpserver.HttpHandler;
+import org.jboss.com.sun.net.httpserver.HttpServer;
 
 /**
  * Implements a basic static content HTTP server

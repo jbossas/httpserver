@@ -28,16 +28,21 @@
  * @run main/othervm -Dsun.net.httpserver.idleInterval=4 Test3
  */
 
-import com.sun.net.httpserver.*;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.net.InetSocketAddress;
+import java.net.Socket;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
-import java.util.*;
-import java.util.concurrent.*;
-import java.util.regex.*;
-import java.util.regex.Pattern.*;
-import java.io.*;
-import java.net.*;
-import java.security.*;
-import javax.net.ssl.*;
+import org.jboss.com.sun.net.httpserver.Headers;
+import org.jboss.com.sun.net.httpserver.HttpContext;
+import org.jboss.com.sun.net.httpserver.HttpExchange;
+import org.jboss.com.sun.net.httpserver.HttpHandler;
+import org.jboss.com.sun.net.httpserver.HttpServer;
 
 /**
  * Test pipe-lining over http

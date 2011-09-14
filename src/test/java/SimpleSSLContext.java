@@ -21,15 +21,17 @@
  * questions.
  */
 
-import com.sun.net.httpserver.*;
-
-import java.util.*;
-import java.util.concurrent.*;
-import java.io.*;
-import java.net.*;
-import java.security.*;
-import java.security.cert.*;
-import javax.net.ssl.*;
+import javax.net.ssl.KeyManagerFactory;
+import javax.net.ssl.SSLContext;
+import javax.net.ssl.TrustManagerFactory;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.security.KeyManagementException;
+import java.security.KeyStore;
+import java.security.KeyStoreException;
+import java.security.NoSuchAlgorithmException;
+import java.security.UnrecoverableKeyException;
+import java.security.cert.CertificateException;
 
 public class SimpleSSLContext {
 

@@ -28,11 +28,19 @@
  * @run main/othervm -Dsun.net.httpserver.clockTick=1000 -Dsun.net.httpserver.idleInterval=3 Test10
  */
 
-import com.sun.net.httpserver.*;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.net.InetSocketAddress;
+import java.net.Socket;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
-import java.io.*;
-import java.net.*;
-import java.util.concurrent.*;
+import org.jboss.com.sun.net.httpserver.Headers;
+import org.jboss.com.sun.net.httpserver.HttpContext;
+import org.jboss.com.sun.net.httpserver.HttpExchange;
+import org.jboss.com.sun.net.httpserver.HttpHandler;
+import org.jboss.com.sun.net.httpserver.HttpServer;
 
 /*
  * Test handling of empty Http headers

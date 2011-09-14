@@ -25,10 +25,8 @@
 
 package org.jboss.sun.net.httpserver;
 
-import java.io.*;
-import java.net.*;
-import com.sun.net.httpserver.*;
-import com.sun.net.httpserver.spi.*;
+import java.io.IOException;
+import java.io.InputStream;
 
 /**
  * a class which allows the caller to read up to a defined

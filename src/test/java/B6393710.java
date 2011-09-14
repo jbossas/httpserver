@@ -27,12 +27,19 @@
  * @summary  Non authenticated call followed by authenticated call never returns
  */
 
-import com.sun.net.httpserver.*;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.net.InetSocketAddress;
+import java.net.Socket;
+import java.net.SocketTimeoutException;
 
-import java.util.*;
-import java.util.concurrent.*;
-import java.io.*;
-import java.net.*;
+import org.jboss.com.sun.net.httpserver.BasicAuthenticator;
+import org.jboss.com.sun.net.httpserver.Headers;
+import org.jboss.com.sun.net.httpserver.HttpContext;
+import org.jboss.com.sun.net.httpserver.HttpExchange;
+import org.jboss.com.sun.net.httpserver.HttpHandler;
+import org.jboss.com.sun.net.httpserver.HttpServer;
 
 /*
  * Test checks for following bug(s) when a POST containing a request body

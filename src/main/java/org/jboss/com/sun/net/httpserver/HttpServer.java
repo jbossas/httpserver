@@ -25,15 +25,12 @@
 
 package org.jboss.com.sun.net.httpserver;
 
-import java.net.*;
-import java.io.*;
-import java.nio.*;
-import java.security.*;
-import java.nio.channels.*;
-import java.util.*;
-import java.util.concurrent.*;
-import javax.net.ssl.*;
-import com.sun.net.httpserver.spi.HttpServerProvider;
+import java.io.IOException;
+import java.net.BindException;
+import java.net.InetSocketAddress;
+import java.util.concurrent.Executor;
+
+import org.jboss.com.sun.net.httpserver.spi.HttpServerProvider;
 
 /**
  * This class implements a simple HTTP server. A HttpServer is bound to an IP address

@@ -27,12 +27,21 @@
  * @summary HTTP Server failing to answer client requests
  */
 
-import java.net.*;
-import java.io.*;
-import javax.xml.soap.*;
-import java.util.*;
-import com.sun.net.httpserver.*;
-import java.util.concurrent.*;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.net.HttpURLConnection;
+import java.net.InetSocketAddress;
+import java.net.URL;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
+
+import org.jboss.com.sun.net.httpserver.HttpContext;
+import org.jboss.com.sun.net.httpserver.HttpExchange;
+import org.jboss.com.sun.net.httpserver.HttpHandler;
+import org.jboss.com.sun.net.httpserver.HttpServer;
 
 public class B6373555 {
 

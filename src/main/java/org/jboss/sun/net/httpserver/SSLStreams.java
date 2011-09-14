@@ -25,17 +25,23 @@
 
 package org.jboss.sun.net.httpserver;
 
-import java.net.*;
-import java.nio.*;
-import java.io.*;
-import java.nio.channels.*;
-import java.util.*;
-import java.util.concurrent.*;
-import java.util.concurrent.locks.*;
-import javax.net.ssl.*;
-import javax.net.ssl.SSLEngineResult.*;
-import com.sun.net.httpserver.*;
-import com.sun.net.httpserver.spi.*;
+import javax.net.ssl.SSLContext;
+import javax.net.ssl.SSLEngine;
+import javax.net.ssl.SSLEngineResult;
+import javax.net.ssl.SSLEngineResult.HandshakeStatus;
+import javax.net.ssl.SSLEngineResult.Status;
+import javax.net.ssl.SSLException;
+import javax.net.ssl.SSLParameters;
+import javax.net.ssl.SSLSession;
+import java.io.IOException;
+import java.net.InetSocketAddress;
+import java.nio.ByteBuffer;
+import java.nio.channels.SocketChannel;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
+
+import org.jboss.com.sun.net.httpserver.HttpsConfigurator;
+import org.jboss.com.sun.net.httpserver.HttpsParameters;
 
 /**
  * given a non-blocking SocketChannel, it produces

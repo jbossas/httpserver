@@ -25,15 +25,16 @@
 
 package org.jboss.sun.net.httpserver;
 
-import java.io.*;
-import java.nio.*;
-import java.nio.channels.*;
-import java.net.*;
-import javax.net.ssl.*;
-import java.util.*;
-import sun.net.www.MessageHeader;
-import com.sun.net.httpserver.*;
-import com.sun.net.httpserver.spi.*;
+import javax.net.ssl.SSLSession;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.net.InetSocketAddress;
+import java.net.URI;
+
+import org.jboss.com.sun.net.httpserver.Headers;
+import org.jboss.com.sun.net.httpserver.HttpPrincipal;
+import org.jboss.com.sun.net.httpserver.HttpsExchange;
 
 class HttpsExchangeImpl extends HttpsExchange {
 

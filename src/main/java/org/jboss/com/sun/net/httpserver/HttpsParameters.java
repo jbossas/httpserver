@@ -24,10 +24,9 @@
  */
 
 package org.jboss.com.sun.net.httpserver;
-import java.net.InetSocketAddress;
-//BEGIN_TIGER_EXCLUDE
+
 import javax.net.ssl.SSLParameters;
-//END_TIGER_EXCLUDE
+import java.net.InetSocketAddress;
 
 /**
  * Represents the set of parameters for each https

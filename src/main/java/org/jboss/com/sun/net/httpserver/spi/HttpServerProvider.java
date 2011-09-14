@@ -25,16 +25,16 @@
 
 package org.jboss.com.sun.net.httpserver.spi;
 
-import java.io.FileDescriptor;
 import java.io.IOException;
-import java.net.*;
+import java.net.InetSocketAddress;
 import java.security.AccessController;
 import java.security.PrivilegedAction;
 import java.util.Iterator;
+
+import org.jboss.com.sun.net.httpserver.HttpServer;
+import org.jboss.com.sun.net.httpserver.HttpsServer;
 import sun.misc.Service;
 import sun.misc.ServiceConfigurationError;
-import sun.security.action.GetPropertyAction;
-import com.sun.net.httpserver.*;
 
 /**
  * Service provider class for HttpServer.
@@ -161,7 +161,7 @@ public abstract class HttpServerProvider {
                                 return provider;
                             if (loadProviderAsService())
                                 return provider;
-                            provider = new sun.net.httpserver.DefaultHttpServerProvider();
+                            provider = new org.jboss.sun.net.httpserver.DefaultHttpServerProvider();
                             return provider;
                         }
                     });

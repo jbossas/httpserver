@@ -25,13 +25,29 @@
 
 package org.jboss.sun.net.httpserver;
 
-import java.io.*;
-import java.net.*;
-import javax.net.ssl.*;
-import java.util.*;
+import javax.net.ssl.SSLEngine;
+import javax.net.ssl.SSLSession;
+import java.io.BufferedOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.net.InetAddress;
+import java.net.InetSocketAddress;
+import java.net.Socket;
+import java.net.URI;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
+import java.util.Date;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Set;
+import java.util.TimeZone;
 import java.util.logging.Logger;
-import java.text.*;
-import com.sun.net.httpserver.*;
+
+import org.jboss.com.sun.net.httpserver.Headers;
+import org.jboss.com.sun.net.httpserver.HttpExchange;
+import org.jboss.com.sun.net.httpserver.HttpPrincipal;
 
 class ExchangeImpl {
 

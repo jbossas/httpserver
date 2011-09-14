@@ -27,16 +27,17 @@
  * @summary light weight http server doesn't return correct status code for HEAD requests
  */
 
-import java.net.InetSocketAddress;
-import java.net.HttpURLConnection;
-import java.net.URL;
 import java.io.IOException;
+import java.net.HttpURLConnection;
+import java.net.InetSocketAddress;
+import java.net.URL;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import com.sun.net.httpserver.HttpContext;
-import com.sun.net.httpserver.HttpExchange;
-import com.sun.net.httpserver.HttpHandler;
-import com.sun.net.httpserver.HttpServer;
+
+import org.jboss.com.sun.net.httpserver.HttpContext;
+import org.jboss.com.sun.net.httpserver.HttpExchange;
+import org.jboss.com.sun.net.httpserver.HttpHandler;
+import org.jboss.com.sun.net.httpserver.HttpServer;
 
 public class HeadTest {
 
@@ -51,7 +52,7 @@ public class HeadTest {
             server.setExecutor(Executors.newFixedThreadPool(5));
             HttpContext chunkedContext = server.createContext("/chunked");
             chunkedContext.setHandler(new HttpHandler() {
-                @Override
+
                 public void handle(HttpExchange msg) {
                     try {
                         try {
@@ -70,7 +71,7 @@ public class HeadTest {
             });
             HttpContext clContext = server.createContext("/content");
             clContext.setHandler(new HttpHandler() {
-                @Override
+
                 public void handle(HttpExchange msg) {
                     try {
                         try {

@@ -27,22 +27,25 @@
  * @summary  com.sun.net.httpserver.HttpServer should handle POSTs larger than 2Gig
  */
 
-import java.io.InputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.OutputStream;
-import java.io.PrintStream;
-import java.net.InetSocketAddress;
 import java.net.HttpURLConnection;
+import java.net.InetSocketAddress;
 import java.net.URL;
-import java.net.Socket;
-import java.util.logging.*;
-import com.sun.net.httpserver.HttpExchange;
-import com.sun.net.httpserver.HttpHandler;
-import com.sun.net.httpserver.HttpServer;
+import java.util.logging.Handler;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import java.util.logging.SimpleFormatter;
+import java.util.logging.StreamHandler;
+
+import org.jboss.com.sun.net.httpserver.HttpExchange;
+import org.jboss.com.sun.net.httpserver.HttpHandler;
+import org.jboss.com.sun.net.httpserver.HttpServer;
 
 public class FixedLengthInputStream
 {
-    static final long POST_SIZE = 4L * 1024L * 1024L * 1024L; // 4Gig
+    static final int POST_SIZE = 4 * 1024 * 1024 * 1024; // 4Gig
 
     void test(String[] args) throws IOException {
         HttpServer httpServer = startHttpServer();
@@ -104,7 +107,6 @@ public class FixedLengthInputStream
             this.expected = expected;
         }
 
-        @Override
         public void handle(HttpExchange t) throws IOException {
             InputStream is = t.getRequestBody();
             byte[] ba = new byte[BUFFER_SIZE];

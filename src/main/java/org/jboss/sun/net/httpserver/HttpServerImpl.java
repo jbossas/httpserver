@@ -25,16 +25,13 @@
 
 package org.jboss.sun.net.httpserver;
 
-import java.net.*;
-import java.io.*;
-import java.nio.*;
-import java.security.*;
-import java.nio.channels.*;
-import java.util.*;
-import java.util.concurrent.*;
-import javax.net.ssl.*;
-import com.sun.net.httpserver.*;
-import com.sun.net.httpserver.spi.*;
+import java.io.IOException;
+import java.net.InetSocketAddress;
+import java.util.concurrent.Executor;
+
+import org.jboss.com.sun.net.httpserver.HttpContext;
+import org.jboss.com.sun.net.httpserver.HttpHandler;
+import org.jboss.com.sun.net.httpserver.HttpServer;
 
 public class HttpServerImpl extends HttpServer {
 

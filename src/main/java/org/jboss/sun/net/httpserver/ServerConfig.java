@@ -25,10 +25,8 @@
 
 package org.jboss.sun.net.httpserver;
 
-import com.sun.net.httpserver.*;
-import com.sun.net.httpserver.spi.*;
-import java.util.logging.Logger;
 import java.security.PrivilegedAction;
+import java.util.logging.Logger;
 
 /**
  * Parameters that users will not likely need to set

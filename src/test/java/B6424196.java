@@ -27,9 +27,9 @@
  * @summary  PIT build 85 mustang: two jhttp tests fail
  */
 
-import java.net.InetSocketAddress;
 import java.io.IOException;
-import com.sun.net.httpserver.*;
+
+import org.jboss.com.sun.net.httpserver.HttpServer;
 
 public class B6424196 {
 

@@ -25,9 +25,6 @@
 
 package org.jboss.sun.net.httpserver;
 
-import com.sun.net.httpserver.*;
-import com.sun.net.httpserver.spi.*;
-
 class Event {
 
     ExchangeImpl exchange;

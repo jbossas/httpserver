@@ -21,9 +21,8 @@
  * questions.
  */
 
-import com.sun.net.httpserver.*;
-
-import javax.net.ssl.*;
+import javax.net.ssl.HostnameVerifier;
+import javax.net.ssl.SSLSession;
 
 public class DummyVerifier implements HostnameVerifier {
     public boolean verify (String s, SSLSession s1) {

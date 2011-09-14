@@ -25,14 +25,8 @@
 
 package org.jboss.com.sun.net.httpserver;
 
-import java.net.*;
-import java.io.*;
-import java.nio.*;
-import java.security.*;
-import java.nio.channels.*;
-import java.util.*;
-import java.util.concurrent.*;
-import javax.net.ssl.*;
+import javax.net.ssl.SSLContext;
+import javax.net.ssl.SSLParameters;
 
 
 /**

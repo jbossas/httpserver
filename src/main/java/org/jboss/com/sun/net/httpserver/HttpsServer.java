@@ -25,15 +25,11 @@
 
 package org.jboss.com.sun.net.httpserver;
 
-import java.net.*;
-import java.io.*;
-import java.nio.*;
-import java.security.*;
-import java.nio.channels.*;
-import java.util.*;
-import java.util.concurrent.*;
-import javax.net.ssl.*;
-import com.sun.net.httpserver.spi.*;
+import java.io.IOException;
+import java.net.BindException;
+import java.net.InetSocketAddress;
+
+import org.jboss.com.sun.net.httpserver.spi.HttpServerProvider;
 
 /**
  * This class is an extension of {@link HttpServer} which provides

@@ -26,7 +26,8 @@
 package org.jboss.com.sun.net.httpserver;
 
 import java.io.IOException;
-import java.util.*;
+import java.util.List;
+import java.util.ListIterator;
 
 /**
  * A filter used to pre- and post-process incoming requests. Pre-processing occurs
