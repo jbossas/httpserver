@@ -1,12 +1,12 @@
 /*
- * Copyright 2005-2008 Sun Microsystems, Inc.  All Rights Reserved.
+ * Copyright (c) 2005, 2010, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License version 2 only, as
- * published by the Free Software Foundation.  Sun designates this
+ * published by the Free Software Foundation.  Oracle designates this
  * particular file as subject to the "Classpath" exception as provided
- * by Sun in the LICENSE file that accompanied this code.
+ * by Oracle in the LICENSE file that accompanied this code.
  *
  * This code is distributed in the hope that it will be useful, but WITHOUT
  * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
@@ -18,24 +18,20 @@
  * 2 along with this work; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
  *
- * Please contact Sun Microsystems, Inc., 4150 Network Circle, Santa Clara,
- * CA 95054 USA or visit www.sun.com if you need additional information or
- * have any questions.
+ * Please contact Oracle, 500 Oracle Parkway, Redwood Shores, CA 94065 USA
+ * or visit www.oracle.com if you need additional information or have any
+ * questions.
  */
 
-package org.jboss.sun.net.httpserver;
+package sun.net.httpserver;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
-import java.net.SocketTimeoutException;
-import java.nio.BufferOverflowException;
-import java.nio.ByteBuffer;
-import java.nio.channels.SelectionKey;
-import java.nio.channels.Selector;
-import java.nio.channels.SocketChannel;
-
-import org.jboss.com.sun.net.httpserver.Headers;
+import java.util.*;
+import java.nio.*;
+import java.net.*;
+import java.io.*;
+import java.nio.channels.*;
+import com.sun.net.httpserver.*;
+import com.sun.net.httpserver.spi.*;
 
 /**
  */
@@ -56,6 +52,9 @@ class Request {
         os = rawout;
         do {
             startLine = readLine();
+            if (startLine == null) {
+                return;
+            }
             /* skip blank lines */
         } while (startLine == null ? false : startLine.equals (""));
     }
@@ -130,9 +129,22 @@ class Request {
         hdrs = new Headers();
 
         char s[] = new char[10];
+        int len = 0;
+
         int firstc = is.read();
+
+        // check for empty headers
+        if (firstc == CR || firstc == LF) {
+            int c = is.read();
+            if (c == CR || c == LF) {
+                return hdrs;
+            }
+            s[0] = (char)firstc;
+            len = 1;
+            firstc = c;
+        }
+
         while (firstc != LF && firstc != CR && firstc >= 0) {
-            int len = 0;
             int keyend = -1;
             int c;
             boolean inKey = firstc > ' ';
@@ -192,6 +204,7 @@ class Request {
             else
                 v = String.copyValueOf(s, keyend, len - keyend);
             hdrs.add (k,v);
+            len = 0;
         }
         return hdrs;
     }
@@ -202,32 +215,22 @@ class Request {
 
     static class ReadStream extends InputStream {
         SocketChannel channel;
-        SelectorCache sc;
-        Selector selector;
         ByteBuffer chanbuf;
-        SelectionKey key;
-        int available;
         byte[] one;
-        boolean closed = false, eof = false;
+        private boolean closed = false, eof = false;
         ByteBuffer markBuf; /* reads may be satisifed from this buffer */
         boolean marked;
         boolean reset;
         int readlimit;
         static long readTimeout;
         ServerImpl server;
-
-        static {
-            readTimeout = ServerConfig.getReadTimeout();
-        }
+        final static int BUFSIZE = 8 * 1024;
 
         public ReadStream (ServerImpl server, SocketChannel chan) throws IOException {
             this.channel = chan;
             this.server = server;
-            sc = SelectorCache.getSelectorCache();
-            selector = sc.getSelector();
-            chanbuf = ByteBuffer.allocate (8* 1024);
-            key = chan.register (selector, SelectionKey.OP_READ);
-            available = 0;
+            chanbuf = ByteBuffer.allocate (BUFSIZE);
+            chanbuf.clear();
             one = new byte[1];
             closed = marked = reset = false;
         }
@@ -256,6 +259,12 @@ class Request {
                 return -1;
             }
 
+            assert channel.isBlocking();
+
+            if (off < 0 || srclen < 0|| srclen > (b.length-off)) {
+                throw new IndexOutOfBoundsException ();
+            }
+
             if (reset) { /* satisfy from markBuf */
                 canreturn = markBuf.remaining ();
                 willreturn = canreturn>srclen ? srclen : canreturn;
@@ -264,17 +273,19 @@ class Request {
                     reset = false;
                 }
             } else { /* satisfy from channel */
-                canreturn = available();
-                while (canreturn == 0 && !eof) {
-                    block ();
-                    canreturn = available();
+                chanbuf.clear ();
+                if (srclen <  BUFSIZE) {
+                    chanbuf.limit (srclen);
                 }
-                if (eof) {
+                do {
+                    willreturn = channel.read (chanbuf);
+                } while (willreturn == 0);
+                if (willreturn == -1) {
+                    eof = true;
                     return -1;
                 }
-                willreturn = canreturn>srclen ? srclen : canreturn;
+                chanbuf.flip ();
                 chanbuf.get(b, off, willreturn);
-                available -= willreturn;
 
                 if (marked) { /* copy into markBuf */
                     try {
@@ -287,6 +298,11 @@ class Request {
             return willreturn;
         }
 
+        public boolean markSupported () {
+            return true;
+        }
+
+        /* Does not query the OS socket */
         public synchronized int available () throws IOException {
             if (closed)
                 throw new IOException ("Stream is closed");
@@ -297,36 +313,7 @@ class Request {
             if (reset)
                 return markBuf.remaining();
 
-            if (available > 0)
-                return available;
-
-            chanbuf.clear ();
-            available = channel.read (chanbuf);
-            if (available > 0) {
-                chanbuf.flip();
-            } else if (available == -1) {
-                eof = true;
-                available = 0;
-            }
-            return available;
-        }
-
-        /**
-         * block() only called when available==0 and buf is empty
-         */
-        private synchronized void block () throws IOException {
-            long currtime = server.getTime();
-            long maxtime = currtime + readTimeout;
-
-            while (currtime < maxtime) {
-                if (selector.select (readTimeout) == 1) {
-                    selector.selectedKeys().clear();
-                    available ();
-                    return;
-                }
-                currtime = server.getTime();
-            }
-            throw new SocketTimeoutException ("no data received");
+            return chanbuf.remaining();
         }
 
         public void close () throws IOException {
@@ -334,8 +321,6 @@ class Request {
                 return;
             }
             channel.close ();
-            selector.selectNow();
-            sc.freeSelector(selector);
             closed = true;
         }
 
@@ -363,23 +348,14 @@ class Request {
         SocketChannel channel;
         ByteBuffer buf;
         SelectionKey key;
-        SelectorCache sc;
-        Selector selector;
         boolean closed;
         byte[] one;
         ServerImpl server;
-        static long writeTimeout;
-
-        static {
-            writeTimeout = ServerConfig.getWriteTimeout();
-        }
 
         public WriteStream (ServerImpl server, SocketChannel channel) throws IOException {
             this.channel = channel;
             this.server = server;
-            sc = SelectorCache.getSelectorCache();
-            selector = sc.getSelector();
-            key = channel.register (selector, SelectionKey.OP_WRITE);
+            assert channel.isBlocking();
             closed = false;
             one = new byte [1];
             buf = ByteBuffer.allocate (4096);
@@ -412,31 +388,14 @@ class Request {
                 l -= n;
                 if (l == 0)
                     return;
-                block();
             }
         }
-
-        void block () throws IOException {
-            long currtime = server.getTime();
-            long maxtime = currtime + writeTimeout;
-
-            while (currtime < maxtime) {
-                if (selector.select (writeTimeout) == 1) {
-                    selector.selectedKeys().clear ();
-                    return;
-                }
-                currtime = server.getTime();
-            }
-            throw new SocketTimeoutException ("write blocked too long");
-        }
-
 
         public void close () throws IOException {
             if (closed)
                 return;
+            //server.logStackTrace ("Request.OS.close: isOpen="+channel.isOpen());
             channel.close ();
-            selector.selectNow();
-            sc.freeSelector(selector);
             closed = true;
         }
     }

@@ -1,12 +1,12 @@
 /*
- * Copyright 2005 Sun Microsystems, Inc.  All Rights Reserved.
+ * Copyright (c) 2005, 2010, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License version 2 only, as
- * published by the Free Software Foundation.  Sun designates this
+ * published by the Free Software Foundation.  Oracle designates this
  * particular file as subject to the "Classpath" exception as provided
- * by Sun in the LICENSE file that accompanied this code.
+ * by Oracle in the LICENSE file that accompanied this code.
  *
  * This code is distributed in the hope that it will be useful, but WITHOUT
  * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
@@ -18,19 +18,14 @@
  * 2 along with this work; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
  *
- * Please contact Sun Microsystems, Inc., 4150 Network Circle, Santa Clara,
- * CA 95054 USA or visit www.sun.com if you need additional information or
- * have any questions.
+ * Please contact Oracle, 500 Oracle Parkway, Redwood Shores, CA 94065 USA
+ * or visit www.oracle.com if you need additional information or have any
+ * questions.
  */
 
-package org.jboss.com.sun.net.httpserver;
+package com.sun.net.httpserver;
 
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 /**
  * HTTP request and response headers are represented by this class which implements
@@ -81,19 +76,16 @@ public class Headers implements Map<String,List<String>> {
             if (len == 0) {
                 return key;
             }
-            char[] b = new char [len];
-            String s = null;
-                b = key.toCharArray();
-                if (b[0] >= 'a' && b[0] <= 'z') {
-                    b[0] = (char)(b[0] - ('a' - 'A'));
+            char[] b = key.toCharArray();
+            if (b[0] >= 'a' && b[0] <= 'z') {
+                b[0] = (char)(b[0] - ('a' - 'A'));
+            }
+            for (int i=1; i<len; i++) {
+                if (b[i] >= 'A' && b[i] <= 'Z') {
+                    b[i] = (char) (b[i] + ('a' - 'A'));
                 }
-                for (int i=1; i<len; i++) {
-                    if (b[i] >= 'A' && b[i] <= 'Z') {
-                        b[i] = (char) (b[i] + ('a' - 'A'));
-                    }
-                }
-                s = new String (b);
-            return s;
+            }
+            return new String(b);
         }
 
         public int size() {return map.size();}

@@ -1,23 +1,24 @@
 /*
- * JBoss, Home of Professional Open Source.
- * Copyright 2010, Red Hat, Inc., and individual contributors
- * as indicated by the @author tags. See the copyright.txt file in the
- * distribution for a full listing of individual contributors.
+ * Copyright (c) 2005, 2010, Oracle and/or its affiliates. All rights reserved.
+ * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
- * This is free software; you can redistribute it and/or modify it
- * under the terms of the GNU Lesser General Public License as
- * published by the Free Software Foundation; either version 2.1 of
- * the License, or (at your option) any later version.
+ * This code is free software; you can redistribute it and/or modify it
+ * under the terms of the GNU General Public License version 2 only, as
+ * published by the Free Software Foundation.
  *
- * This software is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
- * Lesser General Public License for more details.
+ * This code is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License
+ * version 2 for more details (a copy is included in the LICENSE file that
+ * accompanied this code).
  *
- * You should have received a copy of the GNU Lesser General Public
- * License along with this software; if not, write to the Free
- * Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
- * 02110-1301 USA, or see the FSF site: http://www.fsf.org.
+ * You should have received a copy of the GNU General Public License version
+ * 2 along with this work; if not, write to the Free Software Foundation,
+ * Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
+ *
+ * Please contact Oracle, 500 Oracle Parkway, Redwood Shores, CA 94065 USA
+ * or visit www.oracle.com if you need additional information or have any
+ * questions.
  */
 
 /**
@@ -26,21 +27,12 @@
  * @summary  Light weight HTTP server
  */
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
-import java.net.HttpURLConnection;
-import java.net.InetSocketAddress;
-import java.net.URL;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
+import java.net.*;
+import java.util.concurrent.*;
+import java.io.*;
+import com.sun.net.httpserver.*;
 
-import org.jboss.com.sun.net.httpserver.HttpContext;
-import org.jboss.com.sun.net.httpserver.HttpExchange;
-import org.jboss.com.sun.net.httpserver.HttpHandler;
-import org.jboss.com.sun.net.httpserver.HttpServer;
-
-public class Test11 extends Test {
+public class Test11 {
     static class Handler implements HttpHandler {
         public void handle(HttpExchange t) throws IOException {
             read (t.getRequestBody());
@@ -59,22 +51,25 @@ public class Test11 extends Test {
 
     public static void main (String[] args) throws Exception {
         System.out.print ("Test 11: ");
-        HttpServer server = HttpServer.create (new InetSocketAddress(0), 0);
-        HttpContext ctx = server.createContext (
-            "/foo/bar/", new Handler ()
-        );
-        ExecutorService s =  Executors.newCachedThreadPool();
-        server.setExecutor (s);
-        server.start ();
-        URL url = new URL ("http://localhost:" + server.getAddress().getPort()+
-                "/Foo/bar/test.html");
-        HttpURLConnection urlc = (HttpURLConnection)url.openConnection();
-        int r = urlc.getResponseCode();
-        System.out.println ("OK");
-        s.shutdown();
-        server.stop(5);
-        if (r == 200) {
-            throw new RuntimeException ("wrong response received");
+        HttpServer server = HttpServer.create(new InetSocketAddress(0), 0);
+        ExecutorService s = Executors.newCachedThreadPool();
+        try {
+            HttpContext ctx = server.createContext (
+                "/foo/bar/", new Handler ()
+            );
+            s =  Executors.newCachedThreadPool();
+            server.start ();
+            URL url = new URL ("http://localhost:" + server.getAddress().getPort()+
+                    "/Foo/bar/test.html");
+            HttpURLConnection urlc = (HttpURLConnection)url.openConnection();
+            int r = urlc.getResponseCode();
+            if (r == 200) {
+                throw new RuntimeException ("wrong response received");
+            }
+            System.out.println ("OK");
+        } finally {
+            s.shutdown();
+            server.stop(2);
         }
     }
 }

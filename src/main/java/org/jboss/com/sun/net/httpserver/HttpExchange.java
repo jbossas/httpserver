@@ -1,12 +1,12 @@
 /*
- * Copyright 2005-2006 Sun Microsystems, Inc.  All Rights Reserved.
+ * Copyright (c) 2005, 2006, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License version 2 only, as
- * published by the Free Software Foundation.  Sun designates this
+ * published by the Free Software Foundation.  Oracle designates this
  * particular file as subject to the "Classpath" exception as provided
- * by Sun in the LICENSE file that accompanied this code.
+ * by Oracle in the LICENSE file that accompanied this code.
  *
  * This code is distributed in the hope that it will be useful, but WITHOUT
  * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
@@ -18,18 +18,20 @@
  * 2 along with this work; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
  *
- * Please contact Sun Microsystems, Inc., 4150 Network Circle, Santa Clara,
- * CA 95054 USA or visit www.sun.com if you need additional information or
- * have any questions.
+ * Please contact Oracle, 500 Oracle Parkway, Redwood Shores, CA 94065 USA
+ * or visit www.oracle.com if you need additional information or have any
+ * questions.
  */
 
-package org.jboss.com.sun.net.httpserver;
+package com.sun.net.httpserver;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
-import java.net.InetSocketAddress;
-import java.net.URI;
+import java.io.*;
+import java.nio.*;
+import java.nio.channels.*;
+import java.net.*;
+import javax.net.ssl.*;
+import java.util.*;
+import sun.net.www.MessageHeader;
 
 /**
  * This class encapsulates a HTTP request received and a
@@ -64,10 +66,6 @@ import java.net.URI;
  */
 
 public abstract class HttpExchange {
-
-    public enum AttributeScope {
-        CONTEXT, CONNECTION
-    }
 
     protected HttpExchange () {
     }
@@ -226,17 +224,6 @@ public abstract class HttpExchange {
     public abstract Object getAttribute (String name) ;
 
     /**
-     * A version getAttribute that allows a scope to be specified.
-     *
-     * The default getAttribute implementation assumes CONTEXT scope.
-     *
-     * @param name the name of the attribute to retrieve
-     * @param scope the scope of the attribute, i.e. CONTEXT or CONNECTION
-     * @return the attribute object, or null if it does not exist
-     */
-    public abstract Object getAttribute(String name, AttributeScope scope);
-
-    /**
      * Filter modules may store arbitrary objects with HttpExchange
      * instances as an out-of-band communication mechanism. Other Filters
      * or the exchange handler may then access these objects.
@@ -249,19 +236,6 @@ public abstract class HttpExchange {
      * @throws NullPointerException if name is <code>null</code>
      */
     public abstract void setAttribute (String name, Object value) ;
-
-    /**
-     * A version of setAttribute that allows a scope to be specified.
-     * <p/>
-     * The default setAttribute implementation assumes CONTEXT scope.
-     *
-     * @param name  the name to associate with the attribute value
-     * @param value the object to store as the attribute value. <code>null</code>
-     *              value is permitted.
-     * @param scope the scope to store the attribute i.e. CONTEXT or CONNECTION
-     */
-    public abstract void setAttribute(String name, Object value, AttributeScope scope);
-
 
     /**
      * Used by Filters to wrap either (or both) of this exchange's InputStream

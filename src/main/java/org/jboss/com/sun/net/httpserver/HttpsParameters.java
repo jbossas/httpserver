@@ -1,12 +1,12 @@
 /*
- * Copyright 2005-2006 Sun Microsystems, Inc.  All Rights Reserved.
+ * Copyright (c) 2005, 2010, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License version 2 only, as
- * published by the Free Software Foundation.  Sun designates this
+ * published by the Free Software Foundation.  Oracle designates this
  * particular file as subject to the "Classpath" exception as provided
- * by Sun in the LICENSE file that accompanied this code.
+ * by Oracle in the LICENSE file that accompanied this code.
  *
  * This code is distributed in the hope that it will be useful, but WITHOUT
  * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
@@ -18,16 +18,16 @@
  * 2 along with this work; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
  *
- * Please contact Sun Microsystems, Inc., 4150 Network Circle, Santa Clara,
- * CA 95054 USA or visit www.sun.com if you need additional information or
- * have any questions.
+ * Please contact Oracle, 500 Oracle Parkway, Redwood Shores, CA 94065 USA
+ * or visit www.oracle.com if you need additional information or have any
+ * questions.
  */
 
-package org.jboss.com.sun.net.httpserver;
-
+package com.sun.net.httpserver;
 import java.net.InetSocketAddress;
-
+//BEGIN_TIGER_EXCLUDE
 import javax.net.ssl.SSLParameters;
+//END_TIGER_EXCLUDE
 
 /**
  * Represents the set of parameters for each https
@@ -69,6 +69,7 @@ public abstract class HttpsParameters {
      */
     public abstract InetSocketAddress getClientAddress();
 
+//BEGIN_TIGER_EXCLUDE
     /**
      * Sets the SSLParameters to use for this HttpsParameters.
      * The parameters must be supported by the SSLContext contained
@@ -81,6 +82,7 @@ public abstract class HttpsParameters {
      *   invalid or unsupported.
      */
     public abstract void setSSLParameters (SSLParameters params);
+//END_TIGER_EXCLUDE
 
     /**
      * Returns a copy of the array of ciphersuites or null if none
@@ -90,7 +92,7 @@ public abstract class HttpsParameters {
      * have been set.
      */
     public String[] getCipherSuites() {
-        return cipherSuites;
+        return cipherSuites != null ? cipherSuites.clone() : null;
     }
 
     /**
@@ -99,7 +101,7 @@ public abstract class HttpsParameters {
      * @param cipherSuites the array of ciphersuites (or null)
      */
     public void setCipherSuites(String[] cipherSuites) {
-        this.cipherSuites = cipherSuites;
+        this.cipherSuites = cipherSuites != null ? cipherSuites.clone() : null;
     }
 
     /**
@@ -110,7 +112,7 @@ public abstract class HttpsParameters {
      * have been set.
      */
     public String[] getProtocols() {
-        return protocols;
+        return protocols != null ? protocols.clone() : null;
     }
 
     /**
@@ -119,7 +121,7 @@ public abstract class HttpsParameters {
      * @param protocols the array of protocols (or null)
      */
     public void setProtocols(String[] protocols) {
-        this.protocols = protocols;
+        this.protocols = protocols != null ? protocols.clone() : null;
     }
 
     /**

@@ -1,12 +1,12 @@
 /*
- * Copyright 2005 Sun Microsystems, Inc.  All Rights Reserved.
+ * Copyright (c) 2005, 2011, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License version 2 only, as
- * published by the Free Software Foundation.  Sun designates this
+ * published by the Free Software Foundation.  Oracle designates this
  * particular file as subject to the "Classpath" exception as provided
- * by Sun in the LICENSE file that accompanied this code.
+ * by Oracle in the LICENSE file that accompanied this code.
  *
  * This code is distributed in the hope that it will be useful, but WITHOUT
  * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
@@ -18,15 +18,17 @@
  * 2 along with this work; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
  *
- * Please contact Sun Microsystems, Inc., 4150 Network Circle, Santa Clara,
- * CA 95054 USA or visit www.sun.com if you need additional information or
- * have any questions.
+ * Please contact Oracle, 500 Oracle Parkway, Redwood Shores, CA 94065 USA
+ * or visit www.oracle.com if you need additional information or have any
+ * questions.
  */
 
-package org.jboss.sun.net.httpserver;
+package sun.net.httpserver;
 
-import java.io.IOException;
-import java.io.InputStream;
+import java.io.*;
+import java.net.*;
+import com.sun.net.httpserver.*;
+import com.sun.net.httpserver.spi.*;
 
 class ChunkedInputStream extends LeftOverInputStream {
     ChunkedInputStream (ExchangeImpl t, InputStream src) {
@@ -67,32 +69,33 @@ class ChunkedInputStream extends LeftOverInputStream {
      */
     private int readChunkHeader () throws IOException {
         boolean gotCR = false;
-        char c;
+        int c;
         char[] len_arr = new char [16];
         int len_size = 0;
         boolean end_of_len = false;
 
-        while ((c=(char)in.read())!= -1) {
+        while ((c=in.read())!= -1) {
+            char ch = (char) c;
             if (len_size == len_arr.length -1) {
                 throw new IOException ("invalid chunk header");
             }
             if (gotCR) {
-                if (c == LF) {
+                if (ch == LF) {
                     int l = numeric (len_arr, len_size);
                     return l;
                 } else {
                     gotCR = false;
                 }
                 if (!end_of_len) {
-                    len_arr[len_size++] = c;
+                    len_arr[len_size++] = ch;
                 }
             } else {
-                if (c == CR) {
+                if (ch == CR) {
                     gotCR = true;
-                } else if (c == ';') {
+                } else if (ch == ';') {
                     end_of_len = true;
                 } else if (!end_of_len) {
-                    len_arr[len_size++] = c;
+                    len_arr[len_size++] = ch;
                 }
             }
         }
@@ -108,6 +111,7 @@ class ChunkedInputStream extends LeftOverInputStream {
             if (remaining == 0) {
                 eof = true;
                 consumeCRLF();
+                t.getServerImpl().requestCompleted (t.getConnection());
                 return -1;
             }
             needToReadHeader = false;

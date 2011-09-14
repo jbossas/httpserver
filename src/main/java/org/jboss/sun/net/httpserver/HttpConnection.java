@@ -1,12 +1,12 @@
 /*
- * Copyright 2005-2006 Sun Microsystems, Inc.  All Rights Reserved.
+ * Copyright (c) 2005, 2010, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License version 2 only, as
- * published by the Free Software Foundation.  Sun designates this
+ * published by the Free Software Foundation.  Oracle designates this
  * particular file as subject to the "Classpath" exception as provided
- * by Sun in the LICENSE file that accompanied this code.
+ * by Oracle in the LICENSE file that accompanied this code.
  *
  * This code is distributed in the hope that it will be useful, but WITHOUT
  * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
@@ -18,25 +18,19 @@
  * 2 along with this work; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
  *
- * Please contact Sun Microsystems, Inc., 4150 Network Circle, Santa Clara,
- * CA 95054 USA or visit www.sun.com if you need additional information or
- * have any questions.
+ * Please contact Oracle, 500 Oracle Parkway, Redwood Shores, CA 94065 USA
+ * or visit www.oracle.com if you need additional information or have any
+ * questions.
  */
 
-package org.jboss.sun.net.httpserver;
+package sun.net.httpserver;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
-import java.nio.channels.SelectionKey;
-import java.nio.channels.SocketChannel;
-
-import javax.net.ssl.SSLContext;
-import javax.net.ssl.SSLEngine;
-
-import java.util.HashMap;
-import java.util.Map;
+import java.io.*;
+import javax.net.ssl.*;
+import java.nio.channels.*;
 import java.util.logging.Logger;
+import com.sun.net.httpserver.*;
+import com.sun.net.httpserver.spi.*;
 
 /**
  * encapsulates all the connection specific state for a HTTP/S connection
@@ -61,11 +55,14 @@ class HttpConnection {
     SelectionKey selectionKey;
     String protocol;
     long time;
+    volatile long creationTime; // time this connection was created
+    volatile long rspStartedTime; // time we started writing the response
     int remaining;
     boolean closed = false;
     Logger logger;
 
-    private final Map<String,Object> attributes = new HashMap<String,Object>();
+    public enum State {IDLE, REQUEST, RESPONSE};
+    volatile State state;
 
     public String toString() {
         String s = null;
@@ -84,6 +81,14 @@ class HttpConnection {
 
     void setContext (HttpContextImpl ctx) {
         context = ctx;
+    }
+
+    State getState() {
+        return state;
+    }
+
+    void setState (State s) {
+        state = s;
     }
 
     void setParameters (
@@ -188,9 +193,4 @@ class HttpConnection {
     HttpContextImpl getHttpContext () {
             return context;
     }
-
-    public Map<String, Object> getAttributes() {
-        return attributes;
-    }
-
 }

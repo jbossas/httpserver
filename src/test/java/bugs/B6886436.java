@@ -1,5 +1,5 @@
 /*
- * Copyright 2007 Sun Microsystems, Inc.  All Rights Reserved.
+ * Copyright (c) 2009, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -16,69 +16,61 @@
  * 2 along with this work; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
  *
- * Please contact Sun Microsystems, Inc., 4150 Network Circle, Santa Clara,
- * CA 95054 USA or visit www.sun.com if you need additional information or
- * have any questions.
+ * Please contact Oracle, 500 Oracle Parkway, Redwood Shores, CA 94065 USA
+ * or visit www.oracle.com if you need additional information or have any
+ * questions.
  */
 
 /**
  * @test
- * @bug 6526158
- * @summary  HttpExchange.getRequestBody().close() throws Exception
+ * @bug 6886436
+ * @summary
  */
 
-import java.io.BufferedOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
-import java.net.HttpURLConnection;
-import java.net.InetSocketAddress;
-import java.net.URL;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
+import com.sun.net.httpserver.*;
 
-import org.jboss.com.sun.net.httpserver.HttpContext;
-import org.jboss.com.sun.net.httpserver.HttpExchange;
-import org.jboss.com.sun.net.httpserver.HttpHandler;
-import org.jboss.com.sun.net.httpserver.HttpServer;
+import java.util.*;
+import java.util.concurrent.*;
+import java.util.logging.*;
+import java.io.*;
+import java.net.*;
 
-public class B6526158 {
-
-    /* keep under 64 k */
-    final static int SIZE = 60 * 1024;
+public class B6886436 {
 
     public static void main (String[] args) throws Exception {
+        Logger logger = Logger.getLogger ("com.sun.net.httpserver");
+        ConsoleHandler c = new ConsoleHandler();
+        c.setLevel (Level.WARNING);
+        logger.addHandler (c);
+        logger.setLevel (Level.WARNING);
         Handler handler = new Handler();
         InetSocketAddress addr = new InetSocketAddress (0);
         HttpServer server = HttpServer.create (addr, 0);
         HttpContext ctx = server.createContext ("/test", handler);
-
         ExecutorService executor = Executors.newCachedThreadPool();
         server.setExecutor (executor);
         server.start ();
 
         URL url = new URL ("http://localhost:"+server.getAddress().getPort()+"/test/foo.html");
         HttpURLConnection urlc = (HttpURLConnection)url.openConnection ();
-        urlc.setDoOutput (true);
         try {
-            OutputStream os = new BufferedOutputStream (urlc.getOutputStream());
-            for (int i=0; i< SIZE; i++) {
-                os.write (i);
-            }
-            os.close();
             InputStream is = urlc.getInputStream();
-            int c = 0;
-            while (is.read()!= -1) {
-                c ++;
-            }
-            is.close();
-        } finally {
+            while (is.read()!= -1) ;
+            is.close ();
+            urlc = (HttpURLConnection)url.openConnection ();
+            urlc.setReadTimeout (3000);
+            is = urlc.getInputStream();
+            while (is.read()!= -1);
+            is.close ();
+
+        } catch (IOException e) {
             server.stop(2);
             executor.shutdown();
-        }
-        if (error) {
             throw new RuntimeException ("Test failed");
         }
+        server.stop(2);
+        executor.shutdown();
+        System.out.println ("OK");
     }
 
     public static boolean error = false;
@@ -89,13 +81,12 @@ public class B6526158 {
             throws IOException
         {
             InputStream is = t.getRequestBody();
-            try {
-                is.close();
-            } catch (IOException e) {
-                e.printStackTrace();
-                error = true;
-            }
-            t.sendResponseHeaders (200, -1);
+            Headers map = t.getRequestHeaders();
+            Headers rmap = t.getResponseHeaders();
+            while (is.read () != -1) ;
+            is.close();
+            // send a 204 response with an empty chunked body
+            t.sendResponseHeaders (204, 0);
             t.close();
         }
     }

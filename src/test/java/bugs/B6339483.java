@@ -21,6 +21,12 @@
  * questions.
  */
 
+/**
+ * @test
+ * @bug 6339483
+ * @summary  NullPointerException when creating a HttpContext with no handler
+ */
+
 import com.sun.net.httpserver.*;
 
 import java.util.*;
@@ -31,39 +37,28 @@ import java.security.*;
 import java.security.cert.*;
 import javax.net.ssl.*;
 
-public class SimpleSSLContext {
+public class B6339483 {
 
-    SSLContext ssl;
+    public static void main (String[] args) throws Exception {
+        InetSocketAddress addr = new InetSocketAddress (0);
+        HttpServer server = HttpServer.create (addr, 0);
+        HttpContext ctx = server.createContext ("/test");
+        ExecutorService executor = Executors.newCachedThreadPool();
+        server.setExecutor (executor);
+        server.start ();
 
-    SimpleSSLContext (String dir) throws IOException {
+        URL url = new URL ("http://localhost:"+server.getAddress().getPort()+"/test/foo.html");
+        HttpURLConnection urlc = (HttpURLConnection)url.openConnection ();
         try {
-            String file = dir+"/testkeys";
-            char[] passphrase = "passphrase".toCharArray();
-            KeyStore ks = KeyStore.getInstance("JKS");
-            ks.load(new FileInputStream(file), passphrase);
-
-            KeyManagerFactory kmf = KeyManagerFactory.getInstance("SunX509");
-            kmf.init(ks, passphrase);
-
-            TrustManagerFactory tmf = TrustManagerFactory.getInstance("SunX509");
-            tmf.init(ks);
-
-            ssl = SSLContext.getInstance ("TLS");
-            ssl.init(kmf.getKeyManagers(), tmf.getTrustManagers(), null);
-        } catch (KeyManagementException e) {
-            throw new RuntimeException (e.getMessage());
-        } catch (KeyStoreException e) {
-            throw new RuntimeException (e.getMessage());
-        } catch (UnrecoverableKeyException e) {
-            throw new RuntimeException (e.getMessage());
-        } catch (CertificateException e) {
-            throw new RuntimeException (e.getMessage());
-        } catch (NoSuchAlgorithmException e) {
-            throw new RuntimeException (e.getMessage());
+            InputStream is = urlc.getInputStream();
+            int c = 0;
+            while (is.read()!= -1) {
+                c ++;
+            }
+        } catch (IOException e) {
+            server.stop(2);
+            executor.shutdown();
+            System.out.println ("OK");
         }
-    }
-
-    SSLContext get () {
-        return ssl;
     }
 }

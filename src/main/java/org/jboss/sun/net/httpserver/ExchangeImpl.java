@@ -1,12 +1,12 @@
 /*
- * Copyright 2005-2008 Sun Microsystems, Inc.  All Rights Reserved.
+ * Copyright (c) 2005, 2010, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License version 2 only, as
- * published by the Free Software Foundation.  Sun designates this
+ * published by the Free Software Foundation.  Oracle designates this
  * particular file as subject to the "Classpath" exception as provided
- * by Sun in the LICENSE file that accompanied this code.
+ * by Oracle in the LICENSE file that accompanied this code.
  *
  * This code is distributed in the hope that it will be useful, but WITHOUT
  * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
@@ -18,42 +18,27 @@
  * 2 along with this work; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
  *
- * Please contact Sun Microsystems, Inc., 4150 Network Circle, Santa Clara,
- * CA 95054 USA or visit www.sun.com if you need additional information or
- * have any questions.
+ * Please contact Oracle, 500 Oracle Parkway, Redwood Shores, CA 94065 USA
+ * or visit www.oracle.com if you need additional information or have any
+ * questions.
  */
 
-package org.jboss.sun.net.httpserver;
+package sun.net.httpserver;
 
-import java.io.BufferedOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
-import java.net.InetAddress;
-import java.net.InetSocketAddress;
-import java.net.Socket;
-import java.net.URI;
-import java.text.DateFormat;
-import java.text.SimpleDateFormat;
-import java.util.Date;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-import java.util.Set;
-import java.util.TimeZone;
-
-import org.jboss.com.sun.net.httpserver.Headers;
-import org.jboss.com.sun.net.httpserver.HttpExchange;
-import org.jboss.com.sun.net.httpserver.HttpPrincipal;
-
-import javax.net.ssl.SSLEngine;
-import javax.net.ssl.SSLSession;
+import java.io.*;
+import java.net.*;
+import javax.net.ssl.*;
+import java.util.*;
+import java.util.logging.Logger;
+import java.text.*;
+import com.sun.net.httpserver.*;
 
 class ExchangeImpl {
 
     Headers reqHdrs, rspHdrs;
     Request req;
     String method;
+    boolean writefinished;
     URI uri;
     HttpConnection connection;
     long reqContentLen;
@@ -68,14 +53,18 @@ class ExchangeImpl {
     boolean http10 = false;
 
     /* for formatting the Date: header */
-    static TimeZone tz;
-    static DateFormat df;
-    static {
-        String pattern = "EEE, dd MMM yyyy HH:mm:ss zzz";
-        tz = TimeZone.getTimeZone ("GMT");
-        df = new SimpleDateFormat (pattern, Locale.US);
-        df.setTimeZone (tz);
-    }
+    private static final String pattern = "EEE, dd MMM yyyy HH:mm:ss zzz";
+    private static final TimeZone gmtTZ = TimeZone.getTimeZone("GMT");
+    private static final ThreadLocal<DateFormat> dateFormat =
+         new ThreadLocal<DateFormat>() {
+             @Override protected DateFormat initialValue() {
+                 DateFormat df = new SimpleDateFormat(pattern, Locale.US);
+                 df.setTimeZone(gmtTZ);
+                 return df;
+         }
+     };
+
+    private static final String HEAD = "HEAD";
 
     /* streams which take care of the HTTP protocol framing
      * and are passed up to higher layers
@@ -86,8 +75,7 @@ class ExchangeImpl {
     PlaceholderOutputStream uos_orig;
 
     boolean sentHeaders; /* true after response headers sent */
-    Map<String,Object> contextAttributes;
-    Map<String,Object> connectionAttributes;
+    Map<String,Object> attributes;
     int rcode = -1;
     HttpPrincipal principal;
     ServerImpl server;
@@ -127,6 +115,10 @@ class ExchangeImpl {
 
     public HttpContextImpl getHttpContext (){
         return connection.getHttpContext();
+    }
+
+    private boolean isHeadRequest() {
+        return HEAD.equals(getRequestMethod());
     }
 
     public void close () {
@@ -217,25 +209,52 @@ class ExchangeImpl {
         PlaceholderOutputStream o = getPlaceholderResponseBody();
         tmpout.write (bytes(statusLine, 0), 0, statusLine.length());
         boolean noContentToSend = false; // assume there is content
-        rspHdrs.set ("Date", df.format (new Date()));
-        if (contentLen == 0) {
-            if (http10) {
-                o.setWrappedStream (new UndefLengthOutputStream (this, ros));
-                close = true;
+        rspHdrs.set ("Date", dateFormat.get().format (new Date()));
+
+        /* check for response type that is not allowed to send a body */
+
+        if ((rCode>=100 && rCode <200) /* informational */
+            ||(rCode == 204)           /* no content */
+            ||(rCode == 304))          /* not modified */
+        {
+            if (contentLen != -1) {
+                Logger logger = server.getLogger();
+                String msg = "sendResponseHeaders: rCode = "+ rCode
+                    + ": forcing contentLen = -1";
+                logger.warning (msg);
+            }
+            contentLen = -1;
+        }
+
+        if (isHeadRequest()) {
+            /* HEAD requests should not set a content length by passing it
+             * through this API, but should instead manually set the required
+             * headers.*/
+            if (contentLen >= 0) {
+                final Logger logger = server.getLogger();
+                String msg =
+                    "sendResponseHeaders: being invoked with a content length for a HEAD request";
+                logger.warning (msg);
+            }
+            noContentToSend = true;
+            contentLen = 0;
+        } else { /* not a HEAD request */
+            if (contentLen == 0) {
+                if (http10) {
+                    o.setWrappedStream (new UndefLengthOutputStream (this, ros));
+                    close = true;
+                } else {
+                    rspHdrs.set ("Transfer-encoding", "chunked");
+                    o.setWrappedStream (new ChunkedOutputStream (this, ros));
+                }
             } else {
-                rspHdrs.set ("Transfer-encoding", "chunked");
-                o.setWrappedStream (new ChunkedOutputStream (this, ros));
+                if (contentLen == -1) {
+                    noContentToSend = true;
+                    contentLen = 0;
+                }
+                rspHdrs.set("Content-length", Long.toString(contentLen));
+                o.setWrappedStream (new FixedLengthOutputStream (this, ros, contentLen));
             }
-        } else {
-            if (contentLen == -1) {
-                noContentToSend = true;
-                contentLen = 0;
-            }
-            /* content len might already be set, eg to implement HEAD resp */
-            if (rspHdrs.getFirst ("Content-length") == null) {
-                rspHdrs.set ("Content-length", Long.toString(contentLen));
-            }
-            o.setWrappedStream (new FixedLengthOutputStream (this, ros, contentLen));
         }
         write (rspHdrs, tmpout);
         this.rspContentLen = contentLen;
@@ -326,62 +345,20 @@ class ExchangeImpl {
         if (name == null) {
             throw new NullPointerException ("null name parameter");
         }
-        if (contextAttributes == null) {
-            contextAttributes = getHttpContext().getAttributes();
+        if (attributes == null) {
+            attributes = getHttpContext().getAttributes();
         }
-        return contextAttributes.get (name);
-    }
-
-    public Object getAttribute(String name, HttpExchange.AttributeScope scope) {
-        if (scope == null) {
-            throw new NullPointerException("null scope parameter");
-        }
-        if (scope.equals(HttpExchange.AttributeScope.CONTEXT)) {
-            return getAttribute(name);
-        }
-
-        if (scope.equals(HttpExchange.AttributeScope.CONNECTION)) {
-            if (name == null) {
-                throw new NullPointerException("null name parameter");
-            }
-            if (connectionAttributes == null) {
-                connectionAttributes = connection.getAttributes();
-            }
-            return connectionAttributes.get(name);
-        }
-
-
-        throw new IllegalArgumentException("Invalid scope '" + scope.toString() + "' specified.");
+        return attributes.get (name);
     }
 
     public void setAttribute (String name, Object value) {
         if (name == null) {
             throw new NullPointerException ("null name parameter");
         }
-        if (contextAttributes == null) {
-            contextAttributes = getHttpContext().getAttributes();
+        if (attributes == null) {
+            attributes = getHttpContext().getAttributes();
         }
-        contextAttributes.put (name, value);
-    }
-
-    public void setAttribute(String name, Object value, HttpExchange.AttributeScope scope) {
-        if (scope == null) {
-            throw new NullPointerException("null scope parameter");
-        }
-        if (scope.equals(HttpExchange.AttributeScope.CONTEXT)) {
-            setAttribute(name, value);
-        }
-        if (scope.equals(HttpExchange.AttributeScope.CONNECTION)) {
-            if (name == null) {
-                throw new NullPointerException("null name parameter");
-            }
-            if (connectionAttributes == null) {
-                connectionAttributes = connection.getAttributes();
-            }
-            connectionAttributes.put(name, value);
-        } else {
-            throw new IllegalArgumentException("Invalid scope '" + scope.toString() + "' specified.");
-        }
+        attributes.put (name, value);
     }
 
     public void setStreams (InputStream i, OutputStream o) {

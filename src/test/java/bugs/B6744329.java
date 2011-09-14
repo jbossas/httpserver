@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2005, 2010, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2005, 2008, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -23,64 +23,56 @@
 
 /**
  * @test
- * @bug 6270015
- * @run main/othervm Test6a
- * @summary  Light weight HTTP server
+ * @bug 6744329
+ * @summary  Exception in light weight Http server
  */
 
 import com.sun.net.httpserver.*;
 
+import java.util.*;
 import java.util.concurrent.*;
 import java.io.*;
 import java.net.*;
+import java.security.*;
+import java.security.cert.*;
 import javax.net.ssl.*;
 
-/**
- * Test https POST large file via chunked encoding (unusually small chunks)
- */
-
-public class Test6a extends Test {
+public class B6744329 {
 
     public static void main (String[] args) throws Exception {
         Handler handler = new Handler();
         InetSocketAddress addr = new InetSocketAddress (0);
-        HttpsServer server = HttpsServer.create (addr, 0);
+        HttpServer server = HttpServer.create (addr, 0);
         HttpContext ctx = server.createContext ("/test", handler);
         ExecutorService executor = Executors.newCachedThreadPool();
-        SSLContext ssl = new SimpleSSLContext(System.getProperty("test.src")).get();
         server.setExecutor (executor);
-        server.setHttpsConfigurator(new HttpsConfigurator (ssl));
         server.start ();
 
-        URL url = new URL ("https://localhost:"+server.getAddress().getPort()+"/test/foo.html");
-        System.out.print ("Test6a: " );
-        HttpsURLConnection urlc = (HttpsURLConnection)url.openConnection ();
-        urlc.setDoOutput (true);
-        urlc.setRequestMethod ("POST");
-        urlc.setChunkedStreamingMode (32); // small chunks
-        urlc.setSSLSocketFactory (ssl.getSocketFactory());
-        urlc.setHostnameVerifier (new DummyVerifier());
-        OutputStream os = new BufferedOutputStream (urlc.getOutputStream());
-        for (int i=0; i<SIZE; i++) {
-            os.write (i % 100);
+        URL url = new URL ("http://localhost:"+server.getAddress().getPort()+"/test/foo.html");
+        HttpURLConnection urlc = (HttpURLConnection)url.openConnection ();
+        try {
+            InputStream is = urlc.getInputStream();
+            int c = 0;
+            while (is.read()!= -1) {
+                c ++;
+            }
+            System.out.println ("OK");
+        } catch (IOException e) {
+            System.out.println ("exception");
+            error = true;
         }
-        os.close();
-        int resp = urlc.getResponseCode();
-        if (resp != 200) {
-            throw new RuntimeException ("test failed response code");
-        }
-        if (error) {
-            throw new RuntimeException ("test failed error");
-        }
-        delay();
         server.stop(2);
         executor.shutdown();
-        System.out.println ("OK");
-
+        if (error) {
+            throw new RuntimeException ("Test failed");
+        }
     }
 
     public static boolean error = false;
-    final static int SIZE = 999999;
+
+    /* this must be the same size as in ChunkedOutputStream.java
+     */
+    final static int CHUNK_SIZE = 4096;
 
     static class Handler implements HttpHandler {
         int invocation = 1;
@@ -90,19 +82,24 @@ public class Test6a extends Test {
             InputStream is = t.getRequestBody();
             Headers map = t.getRequestHeaders();
             Headers rmap = t.getResponseHeaders();
-            int c, count=0;
-            while ((c=is.read ()) != -1) {
-                if (c != (count % 100)) {
-                    error = true;
-                    break;
-                }
-                count ++;
-            }
-            if (count != SIZE) {
-                error = true;
-            }
+            while (is.read () != -1) ;
             is.close();
-            t.sendResponseHeaders (200, -1);
+            /* chunked response */
+            t.sendResponseHeaders (200, 0);
+            OutputStream os = t.getResponseBody();
+            byte[] first = new byte [CHUNK_SIZE * 2];
+            byte[] second = new byte [2];
+            os.write (first);
+            os.write ('x');
+            os.write ('x');
+            /* An index out of bounds exception will be thrown
+             * below, which is caught by server, and connection
+             * will be closed. resulting in IOException to client
+             * - if bug present
+             */
+            os.write ('x');
+            os.write ('x');
+            os.write ('x');
             t.close();
         }
     }

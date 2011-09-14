@@ -1,12 +1,12 @@
 /*
- * Copyright 2005-2006 Sun Microsystems, Inc.  All Rights Reserved.
+ * Copyright (c) 2005, 2006, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License version 2 only, as
- * published by the Free Software Foundation.  Sun designates this
+ * published by the Free Software Foundation.  Oracle designates this
  * particular file as subject to the "Classpath" exception as provided
- * by Sun in the LICENSE file that accompanied this code.
+ * by Oracle in the LICENSE file that accompanied this code.
  *
  * This code is distributed in the hope that it will be useful, but WITHOUT
  * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
@@ -18,19 +18,22 @@
  * 2 along with this work; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
  *
- * Please contact Sun Microsystems, Inc., 4150 Network Circle, Santa Clara,
- * CA 95054 USA or visit www.sun.com if you need additional information or
- * have any questions.
+ * Please contact Oracle, 500 Oracle Parkway, Redwood Shores, CA 94065 USA
+ * or visit www.oracle.com if you need additional information or have any
+ * questions.
  */
 
-package org.jboss.com.sun.net.httpserver;
+package com.sun.net.httpserver;
 
-import java.io.IOException;
-import java.net.BindException;
-import java.net.InetSocketAddress;
-import java.util.concurrent.Executor;
-
-import org.jboss.com.sun.net.httpserver.spi.HttpServerProvider;
+import java.net.*;
+import java.io.*;
+import java.nio.*;
+import java.security.*;
+import java.nio.channels.*;
+import java.util.*;
+import java.util.concurrent.*;
+import javax.net.ssl.*;
+import com.sun.net.httpserver.spi.HttpServerProvider;
 
 /**
  * This class implements a simple HTTP server. A HttpServer is bound to an IP address
@@ -84,7 +87,7 @@ import org.jboss.com.sun.net.httpserver.spi.HttpServerProvider;
  * @since 1.6
  */
 
-public abstract class HttpServer extends HttpHost {
+public abstract class HttpServer {
 
     /**
      */
@@ -184,59 +187,64 @@ public abstract class HttpServer extends HttpHost {
      */
     public abstract void stop (int delay);
 
-    /** {@inheritDoc} */
-    public abstract HttpContext createContext (final String path, final HttpHandler handler);
-
-    /** {@inheritDoc} */
-    public abstract HttpContext createContext (final String path);
-
-    /** {@inheritDoc} */
-    public abstract void removeContext (final String path) throws IllegalArgumentException;
-
-    /** {@inheritDoc} */
-    public abstract void removeContext (final HttpContext context) throws IllegalArgumentException;
-
     /**
-     * Creates a virtual host with the given pattern.  A pattern is a sequence of
-     * host name segments seprated by <code>"."</code>, optionally preceded by a
-     * <code>"*."</code> wildcard designator which means "any host or sequence of
-     * hosts".
+     * Creates a HttpContext. A HttpContext represents a mapping from a
+     * URI path to a exchange handler on this HttpServer. Once created, all requests
+     * received by the server for the path will be handled by calling
+     * the given handler object. The context is identified by the path, and
+     * can later be removed from the server using this with the {@link #removeContext(String)} method.
      * <p>
-     * The base implementation throws {@code java.lang.UnsupportedOperationException}
-     * to avoid breaking backwards compatibility with existing implementations.
-     *
-     * @param pattern the virtual host pattern to match
-     * @return the virtual host
-     *
-     * @since 1.7
+     * The path specifies the root URI path for this context. The first character of path must be
+     * '/'. <p>
+     * The class overview describes how incoming request URIs are <a href="#mapping_description">mapped</a>
+     * to HttpContext instances.
+     * @param path the root URI path to associate the context with
+     * @param handler the handler to invoke for incoming requests.
+     * @throws IllegalArgumentException if path is invalid, or if a context
+     *          already exists for this path
+     * @throws NullPointerException if either path, or handler are <code>null</code>
      */
-    public HttpHost createVirtualHost(final String pattern) {
-        throw new UnsupportedOperationException("Virutal hosts not supported by this implementation");
-    }
+    public abstract HttpContext createContext (String path, HttpHandler handler) ;
 
     /**
-     * Removes the virtual host identified by the given pattern from the server.
-     * Removing a virtual host does not affect exchanges currently being
-     * processed but prevents new ones from being accepted.
-     *
-     * @param pattern the virtual host pattern previously registered
-     * @throws IllegalArgumentException if no such pattern is registered
+     * Creates a HttpContext without initially specifying a handler. The handler must later be specified using
+     * {@link HttpContext#setHandler(HttpHandler)}.  A HttpContext represents a mapping from a
+     * URI path to an exchange handler on this HttpServer. Once created, and when
+     * the handler has been set, all requests
+     * received by the server for the path will be handled by calling
+     * the handler object. The context is identified by the path, and
+     * can later be removed from the server using this with the {@link #removeContext(String)} method.
+     * <p>
+     * The path specifies the root URI path for this context. The first character of path must be
+     * '/'. <p>
+     * The class overview describes how incoming request URIs are <a href="#mapping_description">mapped</a>
+     * to HttpContext instances.
+     * @param path the root URI path to associate the context with
+     * @throws IllegalArgumentException if path is invalid, or if a context
+     *          already exists for this path
+     * @throws NullPointerException if path is <code>null</code>
      */
-    public void removeVirtualHost(final String pattern) throws IllegalArgumentException {
-        throw new IllegalArgumentException("No virtual host with the pattern " + pattern + " exists in this server");
-    }
+    public abstract HttpContext createContext (String path) ;
 
     /**
-     * Remove the given virtual host from the server.  Removing a virtual host
-     * does not affect exchanges currently being
-     * processed but prevents new ones from being accepted.
-     *
-     * @param host the host to remove
-     * @throws IllegalArgumentException if no such host is registered
+     * Removes the context identified by the given path from the server.
+     * Removing a context does not affect exchanges currently being processed
+     * but prevents new ones from being accepted.
+     * @param path the path of the handler to remove
+     * @throws IllegalArgumentException if no handler corresponding to this
+     *          path exists.
+     * @throws NullPointerException if path is <code>null</code>
      */
-    public void removeVirtualHost(final HttpHost host) throws IllegalArgumentException {
-        throw new IllegalArgumentException("No virtual host " + host + " exists in this server");
-    }
+    public abstract void removeContext (String path) throws IllegalArgumentException ;
+
+    /**
+     * Removes the given context from the server.
+     * Removing a context does not affect exchanges currently being processed
+     * but prevents new ones from being accepted.
+     * @param context the context to remove
+     * @throws NullPointerException if context is <code>null</code>
+     */
+    public abstract void removeContext (HttpContext context) ;
 
     /**
      * returns the address this server is listening on

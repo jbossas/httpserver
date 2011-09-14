@@ -1,12 +1,12 @@
 /*
- * Copyright 2005-2006 Sun Microsystems, Inc.  All Rights Reserved.
+ * Copyright (c) 2005, 2010, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License version 2 only, as
- * published by the Free Software Foundation.  Sun designates this
+ * published by the Free Software Foundation.  Oracle designates this
  * particular file as subject to the "Classpath" exception as provided
- * by Sun in the LICENSE file that accompanied this code.
+ * by Oracle in the LICENSE file that accompanied this code.
  *
  * This code is distributed in the hope that it will be useful, but WITHOUT
  * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
@@ -18,34 +18,24 @@
  * 2 along with this work; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
  *
- * Please contact Sun Microsystems, Inc., 4150 Network Circle, Santa Clara,
- * CA 95054 USA or visit www.sun.com if you need additional information or
- * have any questions.
+ * Please contact Oracle, 500 Oracle Parkway, Redwood Shores, CA 94065 USA
+ * or visit www.oracle.com if you need additional information or have any
+ * questions.
  */
 
-package org.jboss.sun.net.httpserver;
+package sun.net.httpserver;
 
-import java.io.IOException;
-import java.net.InetSocketAddress;
-import java.net.SocketTimeoutException;
-import java.nio.ByteBuffer;
-import java.nio.channels.SelectionKey;
-import java.nio.channels.Selector;
-import java.nio.channels.SocketChannel;
-import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.ReentrantLock;
-
-import org.jboss.com.sun.net.httpserver.HttpsConfigurator;
-import org.jboss.com.sun.net.httpserver.HttpsParameters;
-
-import javax.net.ssl.SSLContext;
-import javax.net.ssl.SSLEngine;
-import javax.net.ssl.SSLEngineResult;
-import javax.net.ssl.SSLEngineResult.HandshakeStatus;
-import javax.net.ssl.SSLEngineResult.Status;
-import javax.net.ssl.SSLException;
-import javax.net.ssl.SSLParameters;
-import javax.net.ssl.SSLSession;
+import java.net.*;
+import java.nio.*;
+import java.io.*;
+import java.nio.channels.*;
+import java.util.*;
+import java.util.concurrent.*;
+import java.util.concurrent.locks.*;
+import javax.net.ssl.*;
+import javax.net.ssl.SSLEngineResult.*;
+import com.sun.net.httpserver.*;
+import com.sun.net.httpserver.spi.*;
 
 /**
  * given a non-blocking SocketChannel, it produces
@@ -63,8 +53,6 @@ class SSLStreams {
     EngineWrapper wrapper;
     OutputStream os;
     InputStream is;
-    static long readTimeout = ServerConfig.getReadTimeout();
-    static long writeTimeout = ServerConfig.getWriteTimeout();
 
     /* held by thread doing the hand-shake on this connection */
     Lock handshaking = new ReentrantLock();
@@ -86,11 +74,14 @@ class SSLStreams {
     private void configureEngine(HttpsConfigurator cfg, InetSocketAddress addr){
         if (cfg != null) {
             Parameters params = new Parameters (cfg, addr);
+//BEGIN_TIGER_EXCLUDE
             cfg.configure (params);
             SSLParameters sslParams = params.getSSLParameters();
             if (sslParams != null) {
                 engine.setSSLParameters (sslParams);
-            } else {
+            } else
+//END_TIGER_EXCLUDE
+            {
                 /* tiger compatibility */
                 if (params.getCipherSuites() != null) {
                     try {
@@ -114,7 +105,6 @@ class SSLStreams {
 
     class Parameters extends HttpsParameters {
         InetSocketAddress addr;
-        SSLParameters params;
         HttpsConfigurator cfg;
 
         Parameters (HttpsConfigurator cfg, InetSocketAddress addr) {
@@ -127,12 +117,15 @@ class SSLStreams {
         public HttpsConfigurator getHttpsConfigurator() {
             return cfg;
         }
+//BEGIN_TIGER_EXCLUDE
+        SSLParameters params;
         public void setSSLParameters (SSLParameters p) {
             params = p;
         }
         SSLParameters getSSLParameters () {
             return params;
         }
+//END_TIGER_EXCLUDE
     }
 
     /**
@@ -255,9 +248,6 @@ class SSLStreams {
 
         SocketChannel chan;
         SSLEngine engine;
-        SelectorCache sc;
-        Selector write_selector, read_selector;
-        SelectionKey wkey, rkey;
         Object wrapLock, unwrapLock;
         ByteBuffer unwrap_src, wrap_dst;
         boolean closed = false;
@@ -270,16 +260,9 @@ class SSLStreams {
             unwrapLock = new Object();
             unwrap_src = allocate(BufType.PACKET);
             wrap_dst = allocate(BufType.PACKET);
-            sc = SelectorCache.getSelectorCache();
-            write_selector = sc.getSelector();
-            wkey = chan.register (write_selector, SelectionKey.OP_WRITE);
-            read_selector = sc.getSelector();
-            wkey = chan.register (read_selector, SelectionKey.OP_READ);
         }
 
         void close () throws IOException {
-            sc.freeSelector (write_selector);
-            sc.freeSelector (read_selector);
         }
 
         /* try to wrap and send the data in src. Handles OVERFLOW.
@@ -314,15 +297,7 @@ class SSLStreams {
                     wrap_dst.flip();
                     int l = wrap_dst.remaining();
                     assert l == r.result.bytesProduced();
-                    long currtime = time.getTime();
-                    long maxtime = currtime + writeTimeout;
                     while (l>0) {
-                        write_selector.select(writeTimeout); // timeout
-                        currtime = time.getTime();
-                        if (currtime > maxtime) {
-                            throw new SocketTimeoutException ("write timed out");
-                        }
-                        write_selector.selectedKeys().clear();
                         l -= chan.write (wrap_dst);
                     }
                 }
@@ -352,20 +327,12 @@ class SSLStreams {
                 needData = true;
             }
             synchronized (unwrapLock) {
-                int x,y;
+                int x;
                 do {
                     if (needData) {
-                        long currTime = time.getTime();
-                        long maxtime = currTime + readTimeout;
                         do {
-                            if (currTime > maxtime) {
-                                throw new SocketTimeoutException ("read timedout");
-                            }
-                            y = read_selector.select (readTimeout);
-                            currTime = time.getTime();
-                        } while (y != 1);
-                        read_selector.selectedKeys().clear();
                         x = chan.read (unwrap_src);
+                        } while (x == 0);
                         if (x == -1) {
                             throw new IOException ("connection closed for reading");
                         }

@@ -1,27 +1,33 @@
 /*
- * JBoss, Home of Professional Open Source.
- * Copyright 2010, Red Hat, Inc., and individual contributors
- * as indicated by the @author tags. See the copyright.txt file in the
- * distribution for a full listing of individual contributors.
+ * Copyright (c) 2005, 2010, Oracle and/or its affiliates. All rights reserved.
+ * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
- * This is free software; you can redistribute it and/or modify it
- * under the terms of the GNU Lesser General Public License as
- * published by the Free Software Foundation; either version 2.1 of
- * the License, or (at your option) any later version.
+ * This code is free software; you can redistribute it and/or modify it
+ * under the terms of the GNU General Public License version 2 only, as
+ * published by the Free Software Foundation.  Oracle designates this
+ * particular file as subject to the "Classpath" exception as provided
+ * by Oracle in the LICENSE file that accompanied this code.
  *
- * This software is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
- * Lesser General Public License for more details.
+ * This code is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License
+ * version 2 for more details (a copy is included in the LICENSE file that
+ * accompanied this code).
  *
- * You should have received a copy of the GNU Lesser General Public
- * License along with this software; if not, write to the Free
- * Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
- * 02110-1301 USA, or see the FSF site: http://www.fsf.org.
+ * You should have received a copy of the GNU General Public License version
+ * 2 along with this work; if not, write to the Free Software Foundation,
+ * Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
+ *
+ * Please contact Oracle, 500 Oracle Parkway, Redwood Shores, CA 94065 USA
+ * or visit www.oracle.com if you need additional information or have any
+ * questions.
  */
 
-package org.jboss.sun.net.httpserver;
+package sun.net.httpserver;
 
+import com.sun.net.httpserver.*;
+import com.sun.net.httpserver.spi.*;
+import java.util.logging.Logger;
 import java.security.PrivilegedAction;
 
 /**
@@ -33,73 +39,106 @@ class ServerConfig {
 
     static int clockTick;
 
-    static int defaultClockTick = 10000 ; // 10 sec.
+    static final int DEFAULT_CLOCK_TICK = 10000 ; // 10 sec.
 
     /* These values must be a reasonable multiple of clockTick */
-    static long defaultReadTimeout = 20 ; // 20 sec.
-    static long defaultWriteTimeout = 60 ; // 60 sec.
-    static long defaultIdleInterval = 300 ; // 5 min
-    static long defaultSelCacheTimeout = 120 ;  // seconds
-    static int defaultMaxIdleConnections = 200 ;
+    static final long DEFAULT_IDLE_INTERVAL = 30 ; // 5 min
+    static final int DEFAULT_MAX_IDLE_CONNECTIONS = 200 ;
 
-    static long defaultDrainAmount = 64 * 1024;
+    static final long DEFAULT_MAX_REQ_TIME = -1; // default: forever
+    static final long DEFAULT_MAX_RSP_TIME = -1; // default: forever
+    static final long DEFAULT_TIMER_MILLIS = 1000;
 
-    static long readTimeout;
-    static long writeTimeout;
+    static final long DEFAULT_DRAIN_AMOUNT = 64 * 1024;
+
     static long idleInterval;
-    static long selCacheTimeout;
     static long drainAmount;    // max # of bytes to drain from an inputstream
     static int maxIdleConnections;
+
+    // max time a request or response is allowed to take
+    static long maxReqTime;
+    static long maxRspTime;
+    static long timerMillis;
     static boolean debug = false;
 
     static {
 
         idleInterval = ((Long)java.security.AccessController.doPrivileged(
-                new GetLongAction(
+                new sun.security.action.GetLongAction(
                 "sun.net.httpserver.idleInterval",
-                defaultIdleInterval))).longValue() * 1000;
+                DEFAULT_IDLE_INTERVAL))).longValue() * 1000;
 
         clockTick = ((Integer)java.security.AccessController.doPrivileged(
-                new GetIntegerAction(
+                new sun.security.action.GetIntegerAction(
                 "sun.net.httpserver.clockTick",
-                defaultClockTick))).intValue();
+                DEFAULT_CLOCK_TICK))).intValue();
 
         maxIdleConnections = ((Integer)java.security.AccessController.doPrivileged(
-                new GetIntegerAction(
+                new sun.security.action.GetIntegerAction(
                 "sun.net.httpserver.maxIdleConnections",
-                defaultMaxIdleConnections))).intValue();
-
-        readTimeout = ((Long)java.security.AccessController.doPrivileged(
-                new GetLongAction(
-                "sun.net.httpserver.readTimeout",
-                defaultReadTimeout))).longValue()* 1000;
-
-        selCacheTimeout = ((Long)java.security.AccessController.doPrivileged(
-                new GetLongAction(
-                "sun.net.httpserver.selCacheTimeout",
-                defaultSelCacheTimeout))).longValue()* 1000;
-
-        writeTimeout = ((Long)java.security.AccessController.doPrivileged(
-                new GetLongAction(
-                "sun.net.httpserver.writeTimeout",
-                defaultWriteTimeout))).longValue()* 1000;
+                DEFAULT_MAX_IDLE_CONNECTIONS))).intValue();
 
         drainAmount = ((Long)java.security.AccessController.doPrivileged(
-                new GetLongAction(
+                new sun.security.action.GetLongAction(
                 "sun.net.httpserver.drainAmount",
-                defaultDrainAmount))).longValue();
+                DEFAULT_DRAIN_AMOUNT))).longValue();
+
+        maxReqTime = ((Long)java.security.AccessController.doPrivileged(
+                new sun.security.action.GetLongAction(
+                "sun.net.httpserver.maxReqTime",
+                DEFAULT_MAX_REQ_TIME))).longValue();
+
+        maxRspTime = ((Long)java.security.AccessController.doPrivileged(
+                new sun.security.action.GetLongAction(
+                "sun.net.httpserver.maxRspTime",
+                DEFAULT_MAX_RSP_TIME))).longValue();
+
+        timerMillis = ((Long)java.security.AccessController.doPrivileged(
+                new sun.security.action.GetLongAction(
+                "sun.net.httpserver.timerMillis",
+                DEFAULT_TIMER_MILLIS))).longValue();
 
         debug = ((Boolean)java.security.AccessController.doPrivileged(
-                new GetBooleanAction(
+                new sun.security.action.GetBooleanAction(
                 "sun.net.httpserver.debug"))).booleanValue();
     }
 
-    static long getReadTimeout () {
-        return readTimeout;
-    }
 
-    static long getSelCacheTimeout () {
-        return selCacheTimeout;
+    static void checkLegacyProperties (final Logger logger) {
+
+        // legacy properties that are no longer used
+        // print a warning to logger if they are set.
+
+        java.security.AccessController.doPrivileged(
+            new PrivilegedAction<Void>() {
+                public Void run () {
+                    if (System.getProperty("sun.net.httpserver.readTimeout")
+                                                !=null)
+                    {
+                        logger.warning ("sun.net.httpserver.readTimeout "+
+                            "property is no longer used. "+
+                            "Use sun.net.httpserver.maxReqTime instead."
+                        );
+                    }
+                    if (System.getProperty("sun.net.httpserver.writeTimeout")
+                                                !=null)
+                    {
+                        logger.warning ("sun.net.httpserver.writeTimeout "+
+                            "property is no longer used. Use "+
+                            "sun.net.httpserver.maxRspTime instead."
+                        );
+                    }
+                    if (System.getProperty("sun.net.httpserver.selCacheTimeout")
+                                                !=null)
+                    {
+                        logger.warning ("sun.net.httpserver.selCacheTimeout "+
+                            "property is no longer used."
+                        );
+                    }
+                    return null;
+                }
+            }
+        );
     }
 
     static boolean debugEnabled () {
@@ -118,56 +157,19 @@ class ServerConfig {
         return maxIdleConnections;
     }
 
-    static long getWriteTimeout () {
-        return writeTimeout;
-    }
-
     static long getDrainAmount () {
         return drainAmount;
     }
 
-    private static class GetLongAction implements PrivilegedAction<Long> {
-
-        private final String property;
-
-        private final long defaultVal;
-
-        public GetLongAction(final String property, final long defaultVal) {
-            this.property = property;
-            this.defaultVal = defaultVal;
-        }
-
-        public Long run() {
-            return Long.getLong(property, defaultVal);
-        }
+    static long getMaxReqTime () {
+        return maxReqTime;
     }
 
-    private static class GetIntegerAction implements PrivilegedAction<Integer> {
-
-        private final String property;
-
-        private final int defaultVal;
-
-        public GetIntegerAction(final String property, final int defaultVal) {
-            this.property = property;
-            this.defaultVal = defaultVal;
-        }
-
-        public Integer run() {
-            return Integer.getInteger(property, defaultVal);
-        }
+    static long getMaxRspTime () {
+        return maxRspTime;
     }
 
-    private static class GetBooleanAction implements PrivilegedAction<Boolean> {
-
-        private final String property;
-
-        public GetBooleanAction(final String property) {
-            this.property = property;
-        }
-
-        public Boolean run() {
-            return Boolean.valueOf(Boolean.getBoolean(property));
-        }
+    static long getTimerMillis () {
+        return timerMillis;
     }
 }

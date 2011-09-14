@@ -1,55 +1,41 @@
 /*
- * JBoss, Home of Professional Open Source.
- * Copyright 2010, Red Hat, Inc., and individual contributors
- * as indicated by the @author tags. See the copyright.txt file in the
- * distribution for a full listing of individual contributors.
+ * Copyright (c) 2005, 2010, Oracle and/or its affiliates. All rights reserved.
+ * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
- * This is free software; you can redistribute it and/or modify it
- * under the terms of the GNU Lesser General Public License as
- * published by the Free Software Foundation; either version 2.1 of
- * the License, or (at your option) any later version.
+ * This code is free software; you can redistribute it and/or modify it
+ * under the terms of the GNU General Public License version 2 only, as
+ * published by the Free Software Foundation.
  *
- * This software is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
- * Lesser General Public License for more details.
+ * This code is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License
+ * version 2 for more details (a copy is included in the LICENSE file that
+ * accompanied this code).
  *
- * You should have received a copy of the GNU Lesser General Public
- * License along with this software; if not, write to the Free
- * Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
- * 02110-1301 USA, or see the FSF site: http://www.fsf.org.
+ * You should have received a copy of the GNU General Public License version
+ * 2 along with this work; if not, write to the Free Software Foundation,
+ * Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
+ *
+ * Please contact Oracle, 500 Oracle Parkway, Redwood Shores, CA 94065 USA
+ * or visit www.oracle.com if you need additional information or have any
+ * questions.
  */
 
 /**
  * @test
  * @bug 6270015
+ * @run main/othervm Test13
  * @summary  Light weight HTTP server
  */
 
-import java.io.BufferedInputStream;
-import java.io.BufferedOutputStream;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
-import java.net.HttpURLConnection;
-import java.net.InetSocketAddress;
-import java.net.URL;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
+import com.sun.net.httpserver.*;
 
-import org.jboss.com.sun.net.httpserver.HttpContext;
-import org.jboss.com.sun.net.httpserver.HttpHandler;
-import org.jboss.com.sun.net.httpserver.HttpServer;
-import org.jboss.com.sun.net.httpserver.HttpsConfigurator;
-import org.jboss.com.sun.net.httpserver.HttpsServer;
+import java.util.concurrent.*;
+import java.util.logging.*;
+import java.io.*;
+import java.net.*;
 
-import javax.net.ssl.HostnameVerifier;
-import javax.net.ssl.HttpsURLConnection;
-import javax.net.ssl.SSLContext;
-import javax.net.ssl.SSLSession;
+import javax.net.ssl.*;
 
 /* basic http/s connectivity test
  * Tests:
@@ -60,12 +46,19 @@ public class Test13 extends Test {
 
     static SSLContext ctx;
 
+    final static int NUM = 32; // was 32
+
     static boolean fail = false;
 
     public static void main (String[] args) throws Exception {
         HttpServer s1 = null;
         HttpsServer s2 = null;
         ExecutorService executor=null;
+        Logger l = Logger.getLogger ("com.sun.net.httpserver");
+        Handler ha = new ConsoleHandler();
+        ha.setLevel(Level.ALL);
+        l.setLevel(Level.ALL);
+        l.addHandler(ha);
         try {
             String root = System.getProperty ("test.src")+ "/docs";
             System.out.print ("Test13: ");
@@ -85,24 +78,28 @@ public class Test13 extends Test {
 
             int port = s1.getAddress().getPort();
             int httpsport = s2.getAddress().getPort();
-            Runner r[] = new Runner[64];
-            for (int i=0; i<32; i++) {
+            Runner r[] = new Runner[NUM*2];
+            for (int i=0; i<NUM; i++) {
                 r[i] = new Runner (true, "http", root+"/test1", port, "smallfile.txt", 23);
-                r[i+32] = new Runner (true, "https", root+"/test1", port, "smallfile.txt", 23);
+                r[i+NUM] = new Runner (true, "https", root+"/test1", httpsport, "smallfile.txt", 23);
             }
             start (r);
             join (r);
             System.out.println ("OK");
         } finally {
             delay();
-            s1.stop(2);
-            s2.stop(2);
-            executor.shutdown ();
+            if (s1 != null)
+                s1.stop(2);
+            if (s2 != null)
+                s2.stop(2);
+            if (executor != null)
+                executor.shutdown ();
         }
     }
 
     static void start (Runner[] x) {
         for (int i=0; i<x.length; i++) {
+            if (x[i] != null)
             x[i].start();
         }
     }
@@ -110,6 +107,7 @@ public class Test13 extends Test {
     static void join (Runner[] x) {
         for (int i=0; i<x.length; i++) {
             try {
+                if (x[i] != null)
                 x[i].join();
             } catch (InterruptedException e) {}
         }
