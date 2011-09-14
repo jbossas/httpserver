@@ -23,7 +23,7 @@
  * questions.
  */
 
-package sun.net.httpserver;
+package org.jboss.sun.net.httpserver;
 
 import java.io.*;
 import java.nio.*;
@@ -99,7 +99,7 @@ class HttpsExchangeImpl extends HttpsExchange {
     }
 
     public SSLSession getSSLSession () {
-        return impl.getSSLSession ();
+        return impl.getSSLSession();
     }
 
     public Object getAttribute (String name) {

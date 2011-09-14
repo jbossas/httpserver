@@ -23,7 +23,7 @@
  * questions.
  */
 
-package sun.net.httpserver;
+package org.jboss.sun.net.httpserver;
 
 import java.util.*;
 import java.nio.*;
@@ -229,7 +229,7 @@ class Request {
         public ReadStream (ServerImpl server, SocketChannel chan) throws IOException {
             this.channel = chan;
             this.server = server;
-            chanbuf = ByteBuffer.allocate (BUFSIZE);
+            chanbuf = ByteBuffer.allocate(BUFSIZE);
             chanbuf.clear();
             one = new byte[1];
             closed = marked = reset = false;
@@ -284,7 +284,7 @@ class Request {
                     eof = true;
                     return -1;
                 }
-                chanbuf.flip ();
+                chanbuf.flip();
                 chanbuf.get(b, off, willreturn);
 
                 if (marked) { /* copy into markBuf */
@@ -320,7 +320,7 @@ class Request {
             if (closed) {
                 return;
             }
-            channel.close ();
+            channel.close();
             closed = true;
         }
 
@@ -395,7 +395,7 @@ class Request {
             if (closed)
                 return;
             //server.logStackTrace ("Request.OS.close: isOpen="+channel.isOpen());
-            channel.close ();
+            channel.close();
             closed = true;
         }
     }

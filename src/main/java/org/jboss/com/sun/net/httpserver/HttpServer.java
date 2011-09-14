@@ -23,7 +23,7 @@
  * questions.
  */
 
-package com.sun.net.httpserver;
+package org.jboss.com.sun.net.httpserver;
 
 import java.net.*;
 import java.io.*;

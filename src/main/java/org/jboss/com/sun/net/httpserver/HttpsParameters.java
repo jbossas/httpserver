@@ -23,7 +23,7 @@
  * questions.
  */
 
-package com.sun.net.httpserver;
+package org.jboss.com.sun.net.httpserver;
 import java.net.InetSocketAddress;
 //BEGIN_TIGER_EXCLUDE
 import javax.net.ssl.SSLParameters;

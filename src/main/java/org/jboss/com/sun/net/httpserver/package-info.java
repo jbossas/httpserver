@@ -123,4 +123,4 @@
    <p>
    @since 1.6
  */
-package com.sun.net.httpserver;
+package org.jboss.com.sun.net.httpserver;

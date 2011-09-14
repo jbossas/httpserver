@@ -23,7 +23,7 @@
  * questions.
  */
 
-package com.sun.net.httpserver.spi;
+package org.jboss.com.sun.net.httpserver.spi;
 
 import java.io.FileDescriptor;
 import java.io.IOException;
@@ -98,7 +98,7 @@ public abstract class HttpServerProvider {
 
     private static boolean loadProviderAsService() {
         Iterator i = Service.providers(HttpServerProvider.class,
-                                       ClassLoader.getSystemClassLoader());
+                ClassLoader.getSystemClassLoader());
         for (;;) {
             try {
                 if (!i.hasNext())

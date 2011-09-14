@@ -23,7 +23,7 @@
  * questions.
  */
 
-package sun.net.httpserver;
+package org.jboss.sun.net.httpserver;
 
 interface TimeSource {
     public long getTime();
