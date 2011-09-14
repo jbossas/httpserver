@@ -62,42 +62,42 @@ class ServerConfig {
     static {
 
         idleInterval = ((Long)java.security.AccessController.doPrivileged(
-                new sun.security.action.GetLongAction(
+                new GetLongAction(
                 "sun.net.httpserver.idleInterval",
                 DEFAULT_IDLE_INTERVAL))).longValue() * 1000;
 
         clockTick = ((Integer)java.security.AccessController.doPrivileged(
-                new sun.security.action.GetIntegerAction(
+                new GetIntegerAction(
                 "sun.net.httpserver.clockTick",
                 DEFAULT_CLOCK_TICK))).intValue();
 
         maxIdleConnections = ((Integer)java.security.AccessController.doPrivileged(
-                new sun.security.action.GetIntegerAction(
+                new GetIntegerAction(
                 "sun.net.httpserver.maxIdleConnections",
                 DEFAULT_MAX_IDLE_CONNECTIONS))).intValue();
 
         drainAmount = ((Long)java.security.AccessController.doPrivileged(
-                new sun.security.action.GetLongAction(
+                new GetLongAction(
                 "sun.net.httpserver.drainAmount",
                 DEFAULT_DRAIN_AMOUNT))).longValue();
 
         maxReqTime = ((Long)java.security.AccessController.doPrivileged(
-                new sun.security.action.GetLongAction(
+                new GetLongAction(
                 "sun.net.httpserver.maxReqTime",
                 DEFAULT_MAX_REQ_TIME))).longValue();
 
         maxRspTime = ((Long)java.security.AccessController.doPrivileged(
-                new sun.security.action.GetLongAction(
+                new GetLongAction(
                 "sun.net.httpserver.maxRspTime",
                 DEFAULT_MAX_RSP_TIME))).longValue();
 
         timerMillis = ((Long)java.security.AccessController.doPrivileged(
-                new sun.security.action.GetLongAction(
+                new GetLongAction(
                 "sun.net.httpserver.timerMillis",
                 DEFAULT_TIMER_MILLIS))).longValue();
 
         debug = ((Boolean)java.security.AccessController.doPrivileged(
-                new sun.security.action.GetBooleanAction(
+                new GetBooleanAction(
                 "sun.net.httpserver.debug"))).booleanValue();
     }
 
@@ -170,4 +170,50 @@ class ServerConfig {
     static long getTimerMillis () {
         return timerMillis;
     }
+
+    private static class GetLongAction implements PrivilegedAction<Long> {
+
+        private final String property;
+
+        private final long defaultVal;
+
+        public GetLongAction(final String property, final long defaultVal) {
+            this.property = property;
+            this.defaultVal = defaultVal;
+        }
+
+        public Long run() {
+            return Long.getLong(property, defaultVal);
+        }
+    }
+
+    private static class GetIntegerAction implements PrivilegedAction<Integer> {
+
+        private final String property;
+
+        private final int defaultVal;
+
+        public GetIntegerAction(final String property, final int defaultVal) {
+            this.property = property;
+            this.defaultVal = defaultVal;
+        }
+
+        public Integer run() {
+            return Integer.getInteger(property, defaultVal);
+        }
+    }
+
+    private static class GetBooleanAction implements PrivilegedAction<Boolean> {
+
+        private final String property;
+
+        public GetBooleanAction(final String property) {
+            this.property = property;
+        }
+
+        public Boolean run() {
+            return Boolean.valueOf(Boolean.getBoolean(property));
+        }
+    }
+
 }
