@@ -43,4 +43,10 @@ public class Test {
             Thread.sleep (1000);
         } catch (Exception e) {}
     }
+
+    @org.junit.Test
+    public void testThis() {
+        // Add tests later.
+    }
+
 }

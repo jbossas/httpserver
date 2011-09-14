@@ -41,6 +41,11 @@ import org.jboss.com.sun.net.httpserver.HttpServer;
 
 public class HeadTest {
 
+    @org.junit.Test
+    public void testThis() {
+        // Add tests later.
+    }
+
     public static void main(String[] args) throws Exception {
         server();
     }

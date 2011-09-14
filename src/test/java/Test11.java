@@ -42,6 +42,12 @@ import org.jboss.com.sun.net.httpserver.HttpHandler;
 import org.jboss.com.sun.net.httpserver.HttpServer;
 
 public class Test11 {
+
+    @org.junit.Test
+    public void testThis() {
+        // Add tests later.
+    }
+
     static class Handler implements HttpHandler {
         public void handle(HttpExchange t) throws IOException {
             read (t.getRequestBody());
