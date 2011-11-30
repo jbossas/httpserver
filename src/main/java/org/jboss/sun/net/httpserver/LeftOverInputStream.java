@@ -66,7 +66,7 @@ abstract class LeftOverInputStream extends FilterInputStream {
         }
         closed = true;
         if (!eof) {
-            eof = drain (ServerConfig.getDrainAmount());
+            eof = drain (t.getServerConfig().getDrainAmount());
         }
     }
 

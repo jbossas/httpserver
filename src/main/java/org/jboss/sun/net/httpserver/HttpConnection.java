@@ -68,6 +68,7 @@ class HttpConnection {
     public enum State {IDLE, REQUEST, RESPONSE};
     volatile State state;
     private final Map<String,Object> attributes = new HashMap<String,Object>();
+    private final ServerImpl server;
 
     public String toString() {
         String s = null;
@@ -77,7 +78,8 @@ class HttpConnection {
         return s;
     }
 
-    HttpConnection () {
+    HttpConnection (ServerImpl server) {
+        this.server = server;
     }
 
     void setChannel (SocketChannel c) {
@@ -128,7 +130,7 @@ class HttpConnection {
         }
 
         if (!chan.isOpen()) {
-            ServerImpl.dprint ("Channel already closed");
+            server.dprint ("Channel already closed");
             return;
         }
         try {
@@ -137,26 +139,26 @@ class HttpConnection {
                 raw.close();
             }
         } catch (IOException e) {
-            ServerImpl.dprint (e);
+            server.dprint (e);
         }
         try {
             if (rawout != null) {
                 rawout.close();
             }
         } catch (IOException e) {
-            ServerImpl.dprint (e);
+            server.dprint (e);
         }
         try {
             if (sslStreams != null) {
                 sslStreams.close();
             }
         } catch (IOException e) {
-            ServerImpl.dprint (e);
+            server.dprint (e);
         }
         try {
             chan.close();
         } catch (IOException e) {
-            ServerImpl.dprint (e);
+            server.dprint (e);
         }
     }
 

@@ -137,6 +137,10 @@ class ExchangeImpl {
     private boolean isHeadRequest() {
         return HEAD.equals(getRequestMethod());
     }
+    
+    public ServerConfig getServerConfig() {
+        return server.getServerConfig();
+    }
 
     public void close () {
         if (closed) {

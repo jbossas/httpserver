@@ -25,23 +25,23 @@
 
 package org.jboss.sun.net.httpserver;
 
+import java.security.AccessController;
 import java.security.PrivilegedAction;
+import java.util.Map;
 import java.util.logging.Logger;
 
 /**
- * Parameters that users will not likely need to set
- * but are useful for debugging
+ * Parameters that users will not likely need to set but are useful for debugging
  */
-
 class ServerConfig {
 
     static int clockTick;
 
-    static final int DEFAULT_CLOCK_TICK = 10000 ; // 10 sec.
+    static final int DEFAULT_CLOCK_TICK = 10000; // 10 sec.
 
     /* These values must be a reasonable multiple of clockTick */
-    static final long DEFAULT_IDLE_INTERVAL = 30 ; // 5 min
-    static final int DEFAULT_MAX_IDLE_CONNECTIONS = 200 ;
+    static final long DEFAULT_IDLE_INTERVAL = 30; // 5 min
+    static final int DEFAULT_MAX_IDLE_CONNECTIONS = 200;
 
     static final long DEFAULT_MAX_REQ_TIME = -1; // default: forever
     static final long DEFAULT_MAX_RSP_TIME = -1; // default: forever
@@ -49,171 +49,120 @@ class ServerConfig {
 
     static final long DEFAULT_DRAIN_AMOUNT = 64 * 1024;
 
-    static long idleInterval;
-    static long drainAmount;    // max # of bytes to drain from an inputstream
-    static int maxIdleConnections;
+    final long idleInterval;
+    final long drainAmount; // max # of bytes to drain from an inputstream
+    final int maxIdleConnections;
 
     // max time a request or response is allowed to take
-    static long maxReqTime;
-    static long maxRspTime;
-    static long timerMillis;
-    static boolean debug = false;
+    final long maxReqTime;
+    final long maxRspTime;
+    final long timerMillis;
+    final boolean debug;
 
-    static {
-
-        idleInterval = ((Long)java.security.AccessController.doPrivileged(
-                new GetLongAction(
-                "sun.net.httpserver.idleInterval",
-                DEFAULT_IDLE_INTERVAL))).longValue() * 1000;
-
-        clockTick = ((Integer)java.security.AccessController.doPrivileged(
-                new GetIntegerAction(
-                "sun.net.httpserver.clockTick",
-                DEFAULT_CLOCK_TICK))).intValue();
-
-        maxIdleConnections = ((Integer)java.security.AccessController.doPrivileged(
-                new GetIntegerAction(
-                "sun.net.httpserver.maxIdleConnections",
-                DEFAULT_MAX_IDLE_CONNECTIONS))).intValue();
-
-        drainAmount = ((Long)java.security.AccessController.doPrivileged(
-                new GetLongAction(
-                "sun.net.httpserver.drainAmount",
-                DEFAULT_DRAIN_AMOUNT))).longValue();
-
-        maxReqTime = ((Long)java.security.AccessController.doPrivileged(
-                new GetLongAction(
-                "sun.net.httpserver.maxReqTime",
-                DEFAULT_MAX_REQ_TIME))).longValue();
-
-        maxRspTime = ((Long)java.security.AccessController.doPrivileged(
-                new GetLongAction(
-                "sun.net.httpserver.maxRspTime",
-                DEFAULT_MAX_RSP_TIME))).longValue();
-
-        timerMillis = ((Long)java.security.AccessController.doPrivileged(
-                new GetLongAction(
-                "sun.net.httpserver.timerMillis",
-                DEFAULT_TIMER_MILLIS))).longValue();
-
-        debug = ((Boolean)java.security.AccessController.doPrivileged(
-                new GetBooleanAction(
-                "sun.net.httpserver.debug"))).booleanValue();
+    public ServerConfig() {
+        this(null);
     }
 
+    public ServerConfig(Map<String, String> configuration) {
+        idleInterval = getLongProperty(configuration, "sun.net.httpserver.idleInterval", DEFAULT_IDLE_INTERVAL) * 1000;
+        clockTick = getIntegerProperty(configuration, "sun.net.httpserver.clockTick", DEFAULT_CLOCK_TICK);
+        maxIdleConnections = getIntegerProperty(configuration, "sun.net.httpserver.maxIdleConnections", DEFAULT_MAX_IDLE_CONNECTIONS);
+        drainAmount = getLongProperty(configuration, "sun.net.httpserver.drainAmount", DEFAULT_DRAIN_AMOUNT);
+        maxReqTime = getLongProperty(configuration, "sun.net.httpserver.maxReqTime", DEFAULT_MAX_REQ_TIME);
+        maxRspTime = getLongProperty(configuration, "sun.net.httpserver.maxRspTime", DEFAULT_MAX_RSP_TIME);
+        timerMillis = getLongProperty(configuration, "sun.net.httpserver.timerMillis", DEFAULT_TIMER_MILLIS);
+        debug = getBooleanProperty(configuration, "sun.net.httpserver.debug");
+    }
 
-    static void checkLegacyProperties (final Logger logger) {
+    void checkLegacyProperties(final Logger logger) {
 
         // legacy properties that are no longer used
         // print a warning to logger if they are set.
 
-        java.security.AccessController.doPrivileged(
-            new PrivilegedAction<Void>() {
-                public Void run () {
-                    if (System.getProperty("sun.net.httpserver.readTimeout")
-                                                !=null)
-                    {
-                        logger.warning ("sun.net.httpserver.readTimeout "+
-                            "property is no longer used. "+
-                            "Use sun.net.httpserver.maxReqTime instead."
-                        );
-                    }
-                    if (System.getProperty("sun.net.httpserver.writeTimeout")
-                                                !=null)
-                    {
-                        logger.warning ("sun.net.httpserver.writeTimeout "+
-                            "property is no longer used. Use "+
-                            "sun.net.httpserver.maxRspTime instead."
-                        );
-                    }
-                    if (System.getProperty("sun.net.httpserver.selCacheTimeout")
-                                                !=null)
-                    {
-                        logger.warning ("sun.net.httpserver.selCacheTimeout "+
-                            "property is no longer used."
-                        );
-                    }
-                    return null;
+        java.security.AccessController.doPrivileged(new PrivilegedAction<Void>() {
+            public Void run() {
+                if (System.getProperty("sun.net.httpserver.readTimeout") != null) {
+                    logger.warning("sun.net.httpserver.readTimeout " + "property is no longer used. "
+                            + "Use sun.net.httpserver.maxReqTime instead.");
                 }
+                if (System.getProperty("sun.net.httpserver.writeTimeout") != null) {
+                    logger.warning("sun.net.httpserver.writeTimeout " + "property is no longer used. Use "
+                            + "sun.net.httpserver.maxRspTime instead.");
+                }
+                if (System.getProperty("sun.net.httpserver.selCacheTimeout") != null) {
+                    logger.warning("sun.net.httpserver.selCacheTimeout " + "property is no longer used.");
+                }
+                return null;
             }
-        );
+        });
     }
 
-    static boolean debugEnabled () {
+    boolean debugEnabled() {
         return debug;
     }
 
-    static long getIdleInterval () {
+    long getIdleInterval() {
         return idleInterval;
     }
 
-    static int getClockTick () {
+    int getClockTick() {
         return clockTick;
     }
 
-    static int getMaxIdleConnections () {
+    int getMaxIdleConnections() {
         return maxIdleConnections;
     }
 
-    static long getDrainAmount () {
+    long getDrainAmount() {
         return drainAmount;
     }
 
-    static long getMaxReqTime () {
+    long getMaxReqTime() {
         return maxReqTime;
     }
 
-    static long getMaxRspTime () {
+    long getMaxRspTime() {
         return maxRspTime;
     }
 
-    static long getTimerMillis () {
+    long getTimerMillis() {
         return timerMillis;
     }
 
-    private static class GetLongAction implements PrivilegedAction<Long> {
-
-        private final String property;
-
-        private final long defaultVal;
-
-        public GetLongAction(final String property, final long defaultVal) {
-            this.property = property;
-            this.defaultVal = defaultVal;
+    private long getLongProperty(final Map<String, String> configuration, final String property, final long defaultVal) {
+        if (configuration != null && configuration.containsKey(property)) {
+            return Long.parseLong(configuration.get(property));
         }
 
-        public Long run() {
-            return Long.getLong(property, defaultVal);
-        }
+        return AccessController.doPrivileged(new PrivilegedAction<Long>() {
+            public Long run() {
+                return Long.getLong(property, defaultVal);
+            }
+        }).longValue();
     }
 
-    private static class GetIntegerAction implements PrivilegedAction<Integer> {
-
-        private final String property;
-
-        private final int defaultVal;
-
-        public GetIntegerAction(final String property, final int defaultVal) {
-            this.property = property;
-            this.defaultVal = defaultVal;
+    private int getIntegerProperty(final Map<String, String> configuration, final String property, final int defaultVal) {
+        if (configuration != null && configuration.containsKey(property)) {
+            return Integer.parseInt(configuration.get(property));
         }
 
-        public Integer run() {
-            return Integer.getInteger(property, defaultVal);
-        }
+        return AccessController.doPrivileged(new PrivilegedAction<Integer>() {
+            public Integer run() {
+                return Integer.getInteger(property, defaultVal);
+            }
+        }).intValue();
     }
 
-    private static class GetBooleanAction implements PrivilegedAction<Boolean> {
-
-        private final String property;
-
-        public GetBooleanAction(final String property) {
-            this.property = property;
+    private boolean getBooleanProperty(final Map<String, String> configuration, final String property) {
+        if (configuration != null && configuration.containsKey(property)) {
+            return Boolean.parseBoolean(configuration.get(property));
         }
 
-        public Boolean run() {
-            return Boolean.valueOf(Boolean.getBoolean(property));
-        }
+        return AccessController.doPrivileged(new PrivilegedAction<Boolean>() {
+            public Boolean run() {
+                return Boolean.valueOf(Boolean.getBoolean(property));
+            }
+        }).booleanValue();
     }
 
 }

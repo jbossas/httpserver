@@ -27,6 +27,7 @@ package org.jboss.sun.net.httpserver;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
+import java.util.Map;
 import java.util.concurrent.Executor;
 
 import org.jboss.com.sun.net.httpserver.HttpContext;
@@ -44,8 +45,15 @@ public class HttpServerImpl extends HttpServer {
     HttpServerImpl (
         InetSocketAddress addr, int backlog
     ) throws IOException {
-        server = new ServerImpl (this, "http", addr, backlog);
+        this(addr, backlog, null);
     }
+    
+    HttpServerImpl (
+            InetSocketAddress addr, int backlog, Map<String, String> configuration
+        ) throws IOException {
+            server = new ServerImpl (this, "http", addr, backlog, configuration);
+        }    
+    
 
     public void bind (InetSocketAddress addr, int backlog) throws IOException {
         server.bind (addr, backlog);

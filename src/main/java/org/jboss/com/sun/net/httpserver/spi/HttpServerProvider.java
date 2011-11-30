@@ -30,6 +30,7 @@ import java.net.InetSocketAddress;
 import java.security.AccessController;
 import java.security.PrivilegedAction;
 import java.util.Iterator;
+import java.util.Map;
 import java.util.ServiceLoader;
 import java.util.ServiceConfigurationError;
 
@@ -49,14 +50,14 @@ public abstract class HttpServerProvider {
      * @param addr the address to bind to. May be <code>null</code>
      * @param backlog the socket backlog. A value of <code>zero</code> means the systems default
      */
-    public abstract HttpServer createHttpServer (InetSocketAddress addr, int backlog) throws IOException;
+    public abstract HttpServer createHttpServer (InetSocketAddress addr, int backlog, Map<String, String> configuration) throws IOException;
 
     /**
      * creates a HttpsServer from this provider
      * @param addr the address to bind to. May be <code>null</code>
      * @param backlog the socket backlog. A value of <code>zero</code> means the systems default
      */
-    public abstract HttpsServer createHttpsServer (InetSocketAddress addr, int backlog) throws IOException;
+    public abstract HttpsServer createHttpsServer (InetSocketAddress addr, int backlog, Map<String, String> configuration) throws IOException;
 
 
 

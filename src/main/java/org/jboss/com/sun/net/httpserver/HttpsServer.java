@@ -28,6 +28,7 @@ package org.jboss.com.sun.net.httpserver;
 import java.io.IOException;
 import java.net.BindException;
 import java.net.InetSocketAddress;
+import java.util.Map;
 
 import org.jboss.com.sun.net.httpserver.spi.HttpServerProvider;
 
@@ -77,14 +78,34 @@ public abstract class HttpsServer extends HttpServer {
      *          or if the server is already bound.
      * @throws IOException
      */
-
-    public static HttpsServer create (
-        InetSocketAddress addr, int backlog
-    ) throws IOException {
-        HttpServerProvider provider = HttpServerProvider.provider();
-        return provider.createHttpsServer (addr, backlog);
+    public static HttpsServer create(InetSocketAddress addr, int backlog) throws IOException {
+        return create(addr, backlog, null);
     }
 
+    /**
+     * Create a <code>HttpsServer</code> instance which will bind to the
+     * specified {@link java.net.InetSocketAddress} (IP address and port number)
+     *
+     * A maximum backlog can also be specified. This is the maximum number of
+     * queued incoming connections to allow on the listening socket.
+     * Queued TCP connections exceeding this limit may be rejected by the TCP implementation.
+     * The HttpsServer is acquired from the currently installed {@link HttpServerProvider}
+     * The server must have a HttpsConfigurator established with {@link #setHttpsConfigurator(HttpsConfigurator)}
+     *
+     * @param addr the address to listen on, if <code>null</code> then bind() must be called
+     *  to set the address
+     * @param backlog the socket backlog. If this value is less than or equal to zero,
+     *          then a system default value is used.
+     * @param configuration, instance specific configuration for this server.          
+     * @throws BindException if the server cannot bind to the requested address,
+     *          or if the server is already bound.
+     * @throws IOException
+     */
+    public static HttpsServer create(InetSocketAddress addr, int backlog, Map<String, String> configuration) throws IOException {
+        HttpServerProvider provider = HttpServerProvider.provider();
+        return provider.createHttpsServer(addr, backlog, configuration);
+    }
+    
     /**
      * Sets this server's {@link HttpsConfigurator} object.
      * @param config the HttpsConfigurator to set

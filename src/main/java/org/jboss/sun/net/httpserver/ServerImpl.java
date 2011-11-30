@@ -47,6 +47,7 @@ import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.ListIterator;
+import java.util.Map;
 import java.util.Set;
 import java.util.Timer;
 import java.util.TimerTask;
@@ -97,13 +98,15 @@ class ServerImpl implements TimeSource {
     private volatile long ticks; /* number of clock ticks since server started */
     private HttpServer wrapper;
 
-    final static int CLOCK_TICK = ServerConfig.getClockTick();
-    final static long IDLE_INTERVAL = ServerConfig.getIdleInterval();
-    final static int MAX_IDLE_CONNECTIONS = ServerConfig.getMaxIdleConnections();
-    final static long TIMER_MILLIS = ServerConfig.getTimerMillis ();
-    final static long MAX_REQ_TIME=getTimeMillis(ServerConfig.getMaxReqTime());
-    final static long MAX_RSP_TIME=getTimeMillis(ServerConfig.getMaxRspTime());
-    final static boolean timer1Enabled = MAX_REQ_TIME != -1 || MAX_RSP_TIME != -1;
+    private final ServerConfig serverConfig;
+    private final int clockTick;
+    private final long idleInterval;
+    private final int maxIdleConnections;
+    private final long timerMillis;
+    private final long maxReqTime;
+    private final long maxRspTime;
+    private final boolean timer1Enabled;
+    private final boolean debug;
 
     private Timer timer, timer1;
     private Logger logger;
@@ -111,11 +114,27 @@ class ServerImpl implements TimeSource {
     ServerImpl (
         HttpServer wrapper, String protocol, InetSocketAddress addr, int backlog
     ) throws IOException {
+        this(wrapper, protocol, addr, backlog, null);
+    }
 
+    ServerImpl (
+            HttpServer wrapper, String protocol, InetSocketAddress addr, int backlog, Map<String, String> configuration
+        ) throws IOException {
+        ServerConfig sc = new ServerConfig(configuration);
+        clockTick = sc.getClockTick();
+        idleInterval = sc.getIdleInterval();
+        maxIdleConnections = sc.getMaxIdleConnections();
+        timerMillis = sc.getTimerMillis();
+        maxReqTime = getTimeMillis(sc.getMaxReqTime());
+        maxRspTime = getTimeMillis(sc.getMaxRspTime());
+        timer1Enabled = maxReqTime != -1 || maxRspTime != -1;
+        debug = sc.debugEnabled();
+        this.serverConfig = sc;
+        
         this.protocol = protocol;
         this.wrapper = wrapper;
         this.logger = Logger.getLogger ("com.sun.net.httpserver");
-        ServerConfig.checkLegacyProperties (logger);
+        sc.checkLegacyProperties (logger);
         https = protocol.equalsIgnoreCase ("https");
         this.address = addr;
         contexts = new ContextList();
@@ -135,13 +154,13 @@ class ServerImpl implements TimeSource {
         rspConnections = Collections.synchronizedSet (new HashSet<HttpConnection>());
         time = System.currentTimeMillis();
         timer = new Timer ("server-timer", true);
-        timer.schedule (new ServerTimerTask(), CLOCK_TICK, CLOCK_TICK);
+        timer.schedule (new ServerTimerTask(), clockTick, clockTick);
         if (timer1Enabled) {
             timer1 = new Timer ("server-timer1", true);
-            timer1.schedule (new ServerTimerTask1(),TIMER_MILLIS,TIMER_MILLIS);
-            logger.config ("HttpServer timer1 enabled period in ms:  "+TIMER_MILLIS);
-            logger.config ("MAX_REQ_TIME:  "+MAX_REQ_TIME);
-            logger.config ("MAX_RSP_TIME:  "+MAX_RSP_TIME);
+            timer1.schedule (new ServerTimerTask1(),timerMillis,timerMillis);
+            logger.config ("HttpServer timer1 enabled period in ms:  "+timerMillis);
+            logger.config ("MAX_REQ_TIME:  "+maxReqTime);
+            logger.config ("MAX_RSP_TIME:  "+maxRspTime);
         }
         events = new LinkedList<Event>();
         logger.config ("HttpServer created "+protocol+" "+ addr);
@@ -201,6 +220,10 @@ class ServerImpl implements TimeSource {
 
     public HttpsConfigurator getHttpsConfigurator () {
         return httpsConfig;
+    }
+    
+    public ServerConfig getServerConfig() {
+        return serverConfig;
     }
 
     public void stop (int delay) {
@@ -304,7 +327,7 @@ class ServerImpl implements TimeSource {
                     if (!is.isEOF()) {
                         t.close = true;
                     }
-                    if (t.close || idleConnections.size() >= MAX_IDLE_CONNECTIONS) {
+                    if (t.close || idleConnections.size() >= maxIdleConnections) {
                         c.close();
                         allConnections.remove (c);
                     } else {
@@ -336,7 +359,7 @@ class ServerImpl implements TimeSource {
                 SelectionKey key = chan.register (selector, SelectionKey.OP_READ);
                 key.attach (c);
                 c.selectionKey = key;
-                c.time = getTime() + IDLE_INTERVAL;
+                c.time = getTime() + idleInterval;
                 idleConnections.add (c);
             } catch (IOException e) {
                 dprint(e);
@@ -387,7 +410,7 @@ class ServerImpl implements TimeSource {
                             }
                             chan.configureBlocking (false);
                             SelectionKey newkey = chan.register (selector, SelectionKey.OP_READ);
-                            HttpConnection c = new HttpConnection ();
+                            HttpConnection c = new HttpConnection (ServerImpl.this);
                             c.selectionKey = newkey;
                             c.setChannel (chan);
                             newkey.attach (c);
@@ -451,17 +474,15 @@ class ServerImpl implements TimeSource {
                 closeConnection(conn);
             }
         }
-    }
+    }    
 
-    static boolean debug = ServerConfig.debugEnabled ();
-
-    static synchronized void dprint (String s) {
+    synchronized void dprint (String s) {
         if (debug) {
             System.out.println (s);
         }
     }
 
-    static synchronized void dprint (Exception e) {
+    synchronized void dprint (Exception e) {
         if (debug) {
             System.out.println (e);
             e.printStackTrace();
@@ -614,8 +635,8 @@ class ServerImpl implements TimeSource {
                         rheaders.set ("Connection", "close");
                     } else if (chdr.equalsIgnoreCase ("keep-alive")) {
                         rheaders.set ("Connection", "keep-alive");
-                        int idle=(int)ServerConfig.getIdleInterval()/1000;
-                        int max=(int)ServerConfig.getMaxIdleConnections();
+                        int idle=(int)idleInterval/1000;
+                        int max=(int)maxIdleConnections;
                         String val = "timeout="+idle+", max="+max;
                         rheaders.set ("Keep-Alive", val);
                     }
@@ -841,9 +862,9 @@ class ServerImpl implements TimeSource {
             LinkedList<HttpConnection> toClose = new LinkedList<HttpConnection>();
             time = System.currentTimeMillis();
             synchronized (reqConnections) {
-                if (MAX_REQ_TIME != -1) {
+                if (maxReqTime != -1) {
                     for (HttpConnection c : reqConnections) {
-                        if (c.creationTime + TIMER_MILLIS + MAX_REQ_TIME <= time) {
+                        if (c.creationTime + timerMillis + maxReqTime <= time) {
                             toClose.add (c);
                         }
                     }
@@ -857,9 +878,9 @@ class ServerImpl implements TimeSource {
             }
             toClose = new LinkedList<HttpConnection>();
             synchronized (rspConnections) {
-                if (MAX_RSP_TIME != -1) {
+                if (maxRspTime != -1) {
                     for (HttpConnection c : rspConnections) {
-                        if (c.rspStartedTime + TIMER_MILLIS +MAX_RSP_TIME <= time) {
+                        if (c.rspStartedTime + timerMillis +maxRspTime <= time) {
                             toClose.add (c);
                         }
                     }
