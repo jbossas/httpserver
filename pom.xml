@@ -6,7 +6,7 @@
 
     <groupId>org.jboss.com.sun.httpserver</groupId>
     <artifactId>httpserver</artifactId>
-    <version>1.0.0.Beta3-SNAPSHOT</version>
+    <version>1.0.0.Beta3</version>
 
     <parent>
         <groupId>org.jboss</groupId>
