@@ -425,7 +425,7 @@ class ExchangeImpl {
     }
 
     public void setStreams (InputStream i, OutputStream o) {
-        assert uis != null;
+        //DISABLED assert uis != null;
         if (i != null) {
             uis = i;
         }
@@ -457,7 +457,7 @@ class ExchangeImpl {
         if (t instanceof HttpExchangeImpl) {
             return ((HttpExchangeImpl)t).getExchangeImpl();
         } else {
-            assert t instanceof HttpsExchangeImpl;
+            //DISABLED assert t instanceof HttpsExchangeImpl;
             return ((HttpsExchangeImpl)t).getExchangeImpl();
         }
     }

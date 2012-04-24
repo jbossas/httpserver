@@ -43,7 +43,7 @@ class ChunkedInputStream extends LeftOverInputStream {
     static char LF = '\n';
 
     private int numeric (char[] arr, int nchars) throws IOException {
-        assert arr.length >= nchars;
+        //DISABLED assert arr.length >= nchars;
         int len = 0;
         for (int i=0; i<nchars; i++) {
             char c = arr[i];
@@ -159,7 +159,7 @@ class ChunkedInputStream extends LeftOverInputStream {
      * and buffered internally
      */
     public boolean isDataBuffered () throws IOException {
-        assert eof;
+        //DISABLED assert eof;
         return in.available() > 0;
     }
 

@@ -195,7 +195,7 @@ class SSLStreams {
     }
 
     private ByteBuffer allocate (BufType type, int len) {
-        assert engine != null;
+        //DISABLED assert engine != null;
         synchronized (this) {
             int size;
             if (type == BufType.PACKET) {
@@ -302,7 +302,7 @@ class SSLStreams {
                 if (r.result.bytesProduced() > 0) {
                     wrap_dst.flip();
                     int l = wrap_dst.remaining();
-                    assert l == r.result.bytesProduced();
+                    //DISABLED assert l == r.result.bytesProduced();
                     while (l>0) {
                         l -= chan.write (wrap_dst);
                     }
@@ -410,7 +410,7 @@ class SSLStreams {
     public WrapperResult recvData (ByteBuffer dst) throws IOException {
         /* we wait until some user data arrives */
         WrapperResult r = null;
-        assert dst.position() == 0;
+        //DISABLED assert dst.position() == 0;
         while (dst.position() == 0) {
             r = wrapper.recvAndUnwrap (dst);
             dst = (r.buf != dst) ? r.buf: dst;
@@ -484,7 +484,7 @@ class SSLStreams {
                         if (r.buf != tmp) {
                             tmp = r.buf;
                         }
-                        assert tmp.position() == 0;
+                        //DISABLED assert tmp.position() == 0;
                         break;
                 }
                 hs_status = r.result.getHandshakeStatus();
@@ -662,7 +662,7 @@ class SSLStreams {
                 r = wrapper.wrapAndSend (buf);
                 stat = r.result.getHandshakeStatus();
             }
-            assert r.result.getStatus() == Status.CLOSED;
+            //DISABLED assert r.result.getStatus() == Status.CLOSED;
         }
     }
 }

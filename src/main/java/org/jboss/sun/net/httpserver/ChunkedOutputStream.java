@@ -72,7 +72,7 @@ class ChunkedOutputStream extends FilterOutputStream
         if (count == CHUNK_SIZE) {
             writeChunk();
         }
-        assert count < CHUNK_SIZE;
+        //DISABLED assert count < CHUNK_SIZE;
     }
 
     public void write (byte[]b, int off, int len) throws IOException {

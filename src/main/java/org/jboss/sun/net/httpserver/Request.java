@@ -261,7 +261,7 @@ class Request {
                 return -1;
             }
 
-            assert channel.isBlocking();
+            //DISABLED assert channel.isBlocking();
 
             if (off < 0 || srclen < 0|| srclen > (b.length-off)) {
                 throw new IndexOutOfBoundsException ();
@@ -357,7 +357,7 @@ class Request {
         public WriteStream (ServerImpl server, SocketChannel channel) throws IOException {
             this.channel = channel;
             this.server = server;
-            assert channel.isBlocking();
+            //DISABLED assert channel.isBlocking();
             closed = false;
             one = new byte [1];
             buf = ByteBuffer.allocate (4096);

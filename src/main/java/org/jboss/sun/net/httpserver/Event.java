@@ -37,7 +37,7 @@ class Event {
 class WriteFinishedEvent extends Event {
     WriteFinishedEvent (ExchangeImpl t) {
         super (t);
-        assert !t.writefinished;
+        //DISABLED assert !t.writefinished;
         t.writefinished = true;
     }
 }

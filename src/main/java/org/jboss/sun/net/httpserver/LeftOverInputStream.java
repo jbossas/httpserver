@@ -56,7 +56,7 @@ abstract class LeftOverInputStream extends FilterInputStream {
      * if bytes are left over buffered on *the UNDERLYING* stream
      */
     public boolean isDataBuffered () throws IOException {
-        assert eof;
+        //DISABLED assert eof;
         return super.available() > 0;
     }
 

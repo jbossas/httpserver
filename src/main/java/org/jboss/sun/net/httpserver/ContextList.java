@@ -34,7 +34,7 @@ class ContextList {
     LinkedList<HttpContextImpl> list = new LinkedList<HttpContextImpl>();
 
     public synchronized void add (HttpContextImpl ctx) {
-        assert ctx.getPath() != null;
+        //DISABLED assert ctx.getPath() != null;
         list.add (ctx);
     }
 

@@ -432,7 +432,7 @@ class ServerImpl implements TimeSource {
                                     }
                                     handle (chan, conn);
                                 } else {
-                                    assert false;
+                                    //DISABLED assert false;
                                 }
                             } catch (CancelledKeyException e) {
                                 handleException(key, null);
@@ -507,9 +507,9 @@ class ServerImpl implements TimeSource {
             idleConnections.remove(conn);
             break;
         }
-        assert !reqConnections.remove(conn);
-        assert !rspConnections.remove(conn);
-        assert !idleConnections.remove(conn);
+        //DISABLED assert !reqConnections.remove(conn);
+        //DISABLED assert !rspConnections.remove(conn);
+        //DISABLED assert !idleConnections.remove(conn);
     }
 
         /* per exchange task */
@@ -796,7 +796,7 @@ class ServerImpl implements TimeSource {
 
     synchronized int endExchange () {
         exchangeCount --;
-        assert exchangeCount >= 0;
+        //DISABLED assert exchangeCount >= 0;
         return exchangeCount;
     }
 
@@ -818,7 +818,7 @@ class ServerImpl implements TimeSource {
     // fashion.
 
     void requestCompleted (HttpConnection c) {
-        assert c.getState() == State.REQUEST;
+        //DISABLED assert c.getState() == State.REQUEST;
         reqConnections.remove (c);
         c.rspStartedTime = getTime();
         rspConnections.add (c);
@@ -827,7 +827,7 @@ class ServerImpl implements TimeSource {
 
     // called after response has been sent
     void responseCompleted (HttpConnection c) {
-        assert c.getState() == State.RESPONSE;
+        //DISABLED assert c.getState() == State.RESPONSE;
         rspConnections.remove (c);
         c.setState (State.IDLE);
     }
