@@ -43,22 +43,25 @@ class Request {
     final static byte CR = 13;
     final static byte LF = 10;
 
-    private String startLine;
-    private SocketChannel chan;
-    private InputStream is;
-    private OutputStream os;
+    String startLine;
+    InputStream is;
+    OutputStream os;
 
     Request (InputStream rawInputStream, OutputStream rawout) throws IOException {
-        this.chan = chan;
+    	this(rawInputStream, rawout, false);
+    }
+    Request (InputStream rawInputStream, OutputStream rawout, boolean bypassReads) throws IOException {
         is = rawInputStream;
         os = rawout;
-        do {
-            startLine = readLine();
-            if (startLine == null) {
-                return;
-            }
-            /* skip blank lines */
-        } while (startLine == null ? false : startLine.equals (""));
+        if(!bypassReads) {
+	        do {
+	            startLine = readLine();
+	            if (startLine == null) {
+	                return;
+	            }
+	            /* skip blank lines */
+	        } while (startLine == null ? false : startLine.equals (""));
+        }
     }
 
 
