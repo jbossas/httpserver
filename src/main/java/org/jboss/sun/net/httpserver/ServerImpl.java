@@ -70,7 +70,7 @@ import org.jboss.sun.net.httpserver.HttpConnection.State;
 class ServerImpl implements TimeSource {
 
     private String protocol;
-    private boolean ajp = true;
+    private boolean ajp;
     private boolean https;
     private Executor executor;
     private HttpsConfigurator httpsConfig;
@@ -115,11 +115,11 @@ class ServerImpl implements TimeSource {
     ServerImpl (
         HttpServer wrapper, String protocol, InetSocketAddress addr, int backlog
     ) throws IOException {
-        this(wrapper, protocol, addr, backlog, null);
+        this(wrapper, protocol, addr, backlog, null, false);
     }
 
     ServerImpl (
-            HttpServer wrapper, String protocol, InetSocketAddress addr, int backlog, Map<String, String> configuration
+            HttpServer wrapper, String protocol, InetSocketAddress addr, int backlog, Map<String, String> configuration, boolean ajp
         ) throws IOException {
         ServerConfig sc = new ServerConfig(configuration);
         clockTick = sc.getClockTick();
@@ -164,7 +164,8 @@ class ServerImpl implements TimeSource {
             logger.config ("MAX_RSP_TIME:  "+maxRspTime);
         }
         events = new LinkedList<Event>();
-        logger.config ("HttpServer created "+protocol+" "+ addr);
+        this.ajp = ajp;
+        logger.config ("HttpServer created "+protocol+" "+ addr+", is AJP? " + ajp);
     }
 
     public void bind (InetSocketAddress addr, int backlog) throws IOException {

@@ -6,6 +6,7 @@ import java.io.IOException;
 
 public class AJPUtil {
 	public static final int REQUEST_BLOCK_LENGTH = 8186;
+    public static final int BODY_CHUNK_MAX_SIZE = 8189;
                 
 	public static void writeEndResponse(DataOutputStream dos) throws IOException {
 		writeResponseHeaderInitial(dos);
@@ -22,10 +23,10 @@ public class AJPUtil {
                             DataOutputStream dosTmp = new DataOutputStream(bos);
                             dosTmp.writeByte(3);
 
-                            if ((contents.length-curPos) > 8189) {
-                                    writeInt(dosTmp, 8189);
-                                    dosTmp.write(contents, curPos, 8189);
-                                    curPos+=8189;
+                            if ((contents.length-curPos) > BODY_CHUNK_MAX_SIZE) {
+                                    writeInt(dosTmp, BODY_CHUNK_MAX_SIZE);
+                                    dosTmp.write(contents, curPos, BODY_CHUNK_MAX_SIZE);
+                                    curPos+=BODY_CHUNK_MAX_SIZE;
                             } else {
                                     writeInt(dosTmp, contents.length-curPos);
                                     dosTmp.write(contents, curPos, contents.length-curPos);

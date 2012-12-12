@@ -50,7 +50,7 @@ public class HttpsServerImpl extends HttpsServer {
     }
     
     HttpsServerImpl(InetSocketAddress addr, int backlog, Map<String, String> configuration) throws IOException {
-        server = new ServerImpl(this, "https", addr, backlog, configuration);
+        server = new ServerImpl(this, "https", addr, backlog, configuration, false);
     }    
 
     public void setHttpsConfigurator (HttpsConfigurator config) {
