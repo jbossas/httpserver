@@ -546,13 +546,6 @@ class ServerImpl implements TimeSource {
             		rawout = new Request.WriteStream (ServerImpl.this, chan);
             		RequestAJP req = new RequestAJP(rawin, rawout);
             		Headers headers = req.headers();
-            		for (Map.Entry<String, List<String>> entry : headers.entrySet()) {
-            			String key = entry.getKey();
-            			List<String> values = entry.getValue();
-            			for (String val : values) {
-            				System.out.println("Header: " + key + "Val: " + val);
-            			}
-            		}
             		requestLine = req.requestLine();
 	                if (requestLine == null) {
 	                    /* connection closed */
@@ -561,16 +554,14 @@ class ServerImpl implements TimeSource {
 	                }
 	                int space = requestLine.indexOf (' ');
 	                if (space == -1) {
-	                    reject (Code.HTTP_BAD_REQUEST,
-	                            requestLine, "Bad request line");
+	                    reject (Code.HTTP_BAD_REQUEST, requestLine, "Bad request line");
 	                    return;
 	                }
 	                String method = requestLine.substring (0, space);
 	                int start = space+1;
 	                space = requestLine.indexOf(' ', start);
 	                if (space == -1) {
-	                    reject (Code.HTTP_BAD_REQUEST,
-	                            requestLine, "Bad request line");
+	                    reject (Code.HTTP_BAD_REQUEST, requestLine, "Bad request line");
 	                    return;
 	                }
 	                String uriStr = requestLine.substring (start, space);
@@ -592,19 +583,15 @@ class ServerImpl implements TimeSource {
 	                }
 	                ctx = contexts.findContext (protocol, uri.getPath());
 	                if (ctx == null) {
-	                    reject (Code.HTTP_NOT_FOUND,
-	                            requestLine, "No context found for request");
+	                    reject (Code.HTTP_NOT_FOUND, requestLine, "No context found for request");
 	                    return;
 	                }
 	                connection.setContext (ctx);
 	                if (ctx.getHandler() == null) {
-	                    reject (Code.HTTP_INTERNAL_ERROR,
-	                            requestLine, "No handler for context");
+	                    reject (Code.HTTP_INTERNAL_ERROR, requestLine, "No handler for context");
 	                    return;
 	                }
-	                tx = new ExchangeImpl (
-	                    method, uri, req, clen, connection
-	                );
+	                tx = new ExchangeImpl (method, uri, req, clen, connection);
 	                String chdr = headers.getFirst("Connection");
 	                Headers rheaders = tx.getResponseHeaders();
 	
@@ -630,22 +617,6 @@ class ServerImpl implements TimeSource {
                         sslContext, protocol, ctx, rawin
                     );
 
-                    /* check if client sent an Expect 100 Continue.
-	                 * In that case, need to send an interim response.
-	                 * In future API may be modified to allow app to
-	                 * be involved in this process.
-	                 */
-	                String exp = headers.getFirst("Expect");
-
-                        // NOT APPLICABLE for AJP
-//	                if (exp != null && exp.equalsIgnoreCase ("100-continue")) {
-//	                    logReply (100, requestLine, null);
-//	                    sendReply (
-//	                        Code.HTTP_CONTINUE, false, null
-//	                    );
-//	                }
-                        
-                        
 	                /* uf is the list of filters seen/set by the user.
 	                 * sf is the list of filters established internally
 	                 * and which are not visible to the user. uc and sc
@@ -662,12 +633,9 @@ class ServerImpl implements TimeSource {
 	                /* set up the two stream references */
 	                tx.getRequestBody();
 	                tx.getResponseBody();
-	                uc.doFilter(new AJPExchangeImpl(tx, rawin, rawout));
-//	                if (https) {
-//	                    uc.doFilter (new HttpsExchangeImpl (tx));
-//	                } else {
-//	                    uc.doFilter (new HttpExchangeImpl (tx));
-//	                }
+                        AJPExchangeImpl ajpExchangeImpl = new AJPExchangeImpl(tx, rawin, rawout);
+	                uc.doFilter(ajpExchangeImpl);
+                        ajpExchangeImpl.close();
             	} catch (IOException e1) {
             		e1.printStackTrace();
 	                logger.log (Level.FINER, "ServerImpl.Exchange (1)", e1);

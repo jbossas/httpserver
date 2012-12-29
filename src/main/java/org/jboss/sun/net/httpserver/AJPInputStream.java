@@ -19,6 +19,7 @@ public class AJPInputStream extends LeftOverInputStream {
     private byte[] currentBuffer;
     private int currentBufferPos;
     private int bytesRead = 0;
+    private boolean endOfStreamReached;
 
     public AJPInputStream(ExchangeImpl exchangeImpl, InputStream ris, OutputStream ros) {
         super(exchangeImpl, ris);
@@ -37,34 +38,39 @@ public class AJPInputStream extends LeftOverInputStream {
         
         if ((bytesRead + currentBuffer.length) < exchangeImpl.reqContentLen) {
             AJPUtil.writeRequestBodyChunk(dos, AJPUtil.REQUEST_BLOCK_LENGTH);
+        } else {
+            this.endOfStreamReached = true;
         }
     }
     
     @Override
-    protected int readImpl(byte[] b, int off, int len) throws IOException {
+    protected int readImpl(byte[] b, int offset, int len) throws IOException {
         if (len == 0) {
             return 0;
         } else if (bytesRead >= exchangeImpl.reqContentLen) {
             return -1;
         }
-        if (currentBuffer == null) {
-            loadBuffer();
-        }
+        int currentOffset = offset;
         int methodBytesRead = 0;
         int remainingLen = len;
         while (remainingLen > 0) {
-            if (currentBufferPos == currentBuffer.length) {
+            if (currentBuffer == null || currentBufferPos == currentBuffer.length) {
+                if (endOfStreamReached) {
+                    break;
+                }
                 loadBuffer();
             }
             if (remainingLen <= (currentBuffer.length - currentBufferPos)) {
-                System.arraycopy(currentBuffer, currentBufferPos, b, off, remainingLen);
+                System.arraycopy(currentBuffer, currentBufferPos, b, currentOffset, remainingLen);
+                currentOffset+=remainingLen;
                 currentBufferPos += remainingLen;
                 bytesRead += remainingLen;
                 methodBytesRead += remainingLen;
                 remainingLen = 0;
             } else {
                 int bToCopy = currentBuffer.length - currentBufferPos;
-                System.arraycopy(currentBuffer, currentBufferPos, b, off, bToCopy);
+                System.arraycopy(currentBuffer, currentBufferPos, b, currentOffset, bToCopy);
+                currentOffset+=bToCopy;
                 currentBufferPos += bToCopy;
                 bytesRead += bToCopy;
                 methodBytesRead += bToCopy;

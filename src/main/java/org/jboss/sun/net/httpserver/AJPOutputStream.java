@@ -8,9 +8,12 @@ import java.io.OutputStream;
 
 public class AJPOutputStream extends FilterOutputStream {
 	ByteArrayOutputStream bos = new ByteArrayOutputStream();
+        AJPExchangeImpl t;
+        private boolean streamClosed = false;
 	
-	public AJPOutputStream(OutputStream os) {
+	public AJPOutputStream(AJPExchangeImpl t, OutputStream os) {
 		super(os);
+                this.t = t;
 	}
 	
 	OutputStream getFilteredOutputStream() {
@@ -18,11 +21,16 @@ public class AJPOutputStream extends FilterOutputStream {
 	}
 	@Override
 	public void close() throws IOException {
+            if (!streamClosed) {
+                streamClosed = true;
 		byte[] buffContents = bos.toByteArray();
 		DataOutputStream dos = new DataOutputStream(out);
 		AJPUtil.writeBody(dos, buffContents);
                 AJPUtil.writeEndResponse(dos);
 		bos.reset();
+                WriteFinishedEvent e = new WriteFinishedEvent (t.getExchangeImpl());
+                t.getHttpContext().getServerImpl().addEvent (e);
+            }
 	}
 	
 	@Override

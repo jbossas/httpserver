@@ -18,6 +18,7 @@ class AJPExchangeImpl extends HttpExchange {
     OutputStream rawOut;
     AJPInputStream ajpInputStream;
     AJPOutputStream ajpOutputStream;
+    boolean writefinished = false;
 
     AJPExchangeImpl (ExchangeImpl impl, InputStream rawIn, OutputStream rawOut) {
         this.impl = impl;
@@ -46,6 +47,11 @@ class AJPExchangeImpl extends HttpExchange {
     }
 
     public void close () {
+        try {
+            ajpOutputStream.close();
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
         impl.close();
     }
 
@@ -62,7 +68,7 @@ class AJPExchangeImpl extends HttpExchange {
 
     public AJPOutputStream getResponseBody () {
     	if (ajpOutputStream == null) {
-            ajpOutputStream = new AJPOutputStream(rawOut);
+            ajpOutputStream = new AJPOutputStream(this, rawOut);
     	}
     	return ajpOutputStream;
     }
@@ -73,7 +79,7 @@ class AJPExchangeImpl extends HttpExchange {
     	PlaceholderOutputStream o = impl.getPlaceholderResponseBody();
     	o.setWrappedStream(impl.ros);
     	DataOutputStream dos = new DataOutputStream(getResponseBody().getFilteredOutputStream());
-    	AJPUtil.writeResponseHeaders(dos, impl.rspHdrs.getFirst("Content-Type"), contentLen);
+    	AJPUtil.writeResponseHeaders(dos, rCode, impl.rspHdrs, impl.rspHdrs.getFirst("Content-Type"), contentLen);
     }
 
     public InetSocketAddress getRemoteAddress (){

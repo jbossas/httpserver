@@ -26,8 +26,7 @@ public class RequestAJP extends Request {
         ajpMsg.startRead(dis);
         int msgType = ajpMsg.readType();
         startLine = ajpMsg.readFirstRequestLine();
-        System.out.println("Start line: " + startLine);
-	}
+    }
     
     Headers headers() throws IOException {
     	if (headers == null) {

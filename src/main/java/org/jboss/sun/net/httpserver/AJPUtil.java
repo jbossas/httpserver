@@ -3,6 +3,9 @@ package org.jboss.sun.net.httpserver;
 import java.io.ByteArrayOutputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
+import java.util.List;
+import java.util.Map;
+import org.jboss.com.sun.net.httpserver.Headers;
 
 public class AJPUtil {
 	public static final int REQUEST_BLOCK_LENGTH = 8186;
@@ -47,21 +50,40 @@ public class AJPUtil {
     	writeInt(dos, reqBlockLength);
     }
     
-    public static void writeResponseHeaders(DataOutputStream dos, String contentType, long contentLength) throws IOException {
+    public static void writeResponseHeaders(DataOutputStream dos, int responseCode, Headers rspHeaders, String contentType, long contentLength) throws IOException {
     	ByteArrayOutputStream bos = new ByteArrayOutputStream();
 		DataOutputStream dosTmp = new DataOutputStream(bos);
 		dosTmp.writeByte(4);
-		writeInt(dosTmp, 200);
-		writeString(dosTmp, "OK");
-		writeInt(dosTmp, 2);
-		
-		//dosTmp.writeByte(0xA001);
-		writeString(dosTmp, "Content-Type");
-		writeString(dosTmp, contentType);
-		
-		//dosTmp.writeByte(0xA003);
-		writeString(dosTmp, "Content-Length");
-		writeString(dosTmp, String.valueOf(contentLength));
+		writeInt(dosTmp, responseCode);
+		writeString(dosTmp, Code.msg(responseCode));
+                
+                // Number of headers
+                int numHeaders = 0;
+                if (!rspHeaders.containsKey("Content-Length")) {
+                    numHeaders++;
+                }
+                for (Map.Entry<String, List<String>> entry : rspHeaders.entrySet()) {
+                    numHeaders += entry.getValue().size();
+                }
+		writeInt(dosTmp, numHeaders);
+                
+                for (Map.Entry<String, List<String>> entry : rspHeaders.entrySet()) {
+                    for (String val : entry.getValue()) {
+                        writeString(dosTmp, entry.getKey());
+                        writeString(dosTmp, val);
+                    }
+                }
+//		//dosTmp.writeByte(0xA001);
+//                if (contentType != null && contentType.length() > 0) {
+//                    writeString(dosTmp, "Content-Type");
+//                    writeString(dosTmp, contentType);
+//                }
+//		
+//		//dosTmp.writeByte(0xA003);
+                if (contentLength > 0) {
+                    writeString(dosTmp, "Content-Length");
+                    writeString(dosTmp, String.valueOf(contentLength));
+                }
 		
 		byte[] headersPacket = bos.toByteArray();
 		writeResponseHeaderInitial(dos);
@@ -74,8 +96,11 @@ public class AJPUtil {
     }
     
     public static void writeString(DataOutputStream dos, String val) throws IOException {
-    	writeInt(dos, val.length());
-    	dos.writeBytes(val);
+        int len = val == null ? 0 : val.length();
+    	writeInt(dos, len);
+        if (val != null) {
+            dos.writeBytes(val);
+        }
     	dos.writeByte(0);
     }
     

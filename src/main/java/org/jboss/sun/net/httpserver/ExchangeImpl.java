@@ -456,6 +456,8 @@ class ExchangeImpl {
     static ExchangeImpl get (HttpExchange t) {
         if (t instanceof HttpExchangeImpl) {
             return ((HttpExchangeImpl)t).getExchangeImpl();
+        } else if (t instanceof AJPExchangeImpl) {
+            return ((AJPExchangeImpl)t).getExchangeImpl();
         } else {
             //DISABLED assert t instanceof HttpsExchangeImpl;
             return ((HttpsExchangeImpl)t).getExchangeImpl();

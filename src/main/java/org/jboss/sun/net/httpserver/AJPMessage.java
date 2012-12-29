@@ -123,26 +123,19 @@ public class AJPMessage {
                 headers.add(header, headerValue);
             }
         }
-        //String contentLengthStr = headers.get("content-length");
-        //long contentLength = -1;
-        //if (contentLengthStr != null) {
-        //try {
-        //contentLength = Long.parseLong(contentLengthStr);
-        //} catch (Exception e) {
-        //System.out.println("Failed to parse content length");
-        //}
-        //}
 
         // read attributes
         byte attType;
+        
+        // FIXME - Need real attribute support
         while ((attType = dis.readByte()) != -1) {
             if (attType == 0x0A) {
                 String name = readString(dis);
                 String val = readString(dis);
-                System.out.println("Nm: " + name + ", val: " + val);
+                //System.out.println("Nm: " + name + ", val: " + val);
             } else {
                 String val = readString(dis);
-                System.out.println("Val: " + val);
+                //System.out.println("Val: " + val);
             }
         }
         return headers;
@@ -218,10 +211,12 @@ public class AJPMessage {
                 if (attType == 0x0A) {
                     String name = readString(dis);
                     String val = readString(dis);
-                    System.out.println("Nm: " + name + ", val: " + val);
+                    // FIXME - Need to add attribute support
+                    //System.out.println("Nm: " + name + ", val: " + val);
                 } else {
+                    // FIXME - Need to add attribute support
                     String val = readString(dis);
-                    System.out.println("Val: " + val);
+                    //System.out.println("Val: " + val);
                 }
             }
         }
