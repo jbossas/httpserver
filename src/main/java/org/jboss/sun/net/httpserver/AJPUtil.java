@@ -10,13 +10,20 @@ import org.jboss.com.sun.net.httpserver.Headers;
 public class AJPUtil {
 	public static final int REQUEST_BLOCK_LENGTH = 8186;
     public static final int BODY_CHUNK_MAX_SIZE = 8189;
-                
-	public static void writeEndResponse(DataOutputStream dos) throws IOException {
+    
+    public static void writeEndResponse(DataOutputStream dos, boolean keepAlive) throws IOException {
 		writeResponseHeaderInitial(dos);
 		dos.writeByte(0);
 		dos.writeByte(2);
 		dos.writeByte(5);
-		writeBoolean(dos, false); // write keep-alive
+		writeBoolean(dos, keepAlive);
+	}
+    
+	public static void writeCPong(DataOutputStream dos) throws IOException {
+		writeResponseHeaderInitial(dos);
+		dos.writeByte(0);
+		dos.writeByte(1);
+		dos.writeByte(9);
 	}
 	
 	public static void writeBody(DataOutputStream dos, byte[] contents) throws IOException {

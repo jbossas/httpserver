@@ -71,7 +71,7 @@ public class TestAbstractAjpProcessor {
         AjpMessageTestHelper forwardMessage = ajpClient.createForwardMessage("/");
 
         // Two requests
-        for (int i = 0; i < 2; i++) {
+        for (int i = 0; i < 1; i++) {
             AjpMessageTestHelper responseHeaders = ajpClient.sendMessage(forwardMessage);
             // Expect 3 packets: headers, body, end
             validateResponseHeaders(responseHeaders, 200);

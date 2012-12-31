@@ -10,6 +10,7 @@ public class AJPOutputStream extends FilterOutputStream {
 	ByteArrayOutputStream bos = new ByteArrayOutputStream();
         AJPExchangeImpl t;
         private boolean streamClosed = false;
+        private boolean responseCommitted = false;
 	
 	public AJPOutputStream(AJPExchangeImpl t, OutputStream os) {
 		super(os);
@@ -19,20 +20,30 @@ public class AJPOutputStream extends FilterOutputStream {
 	OutputStream getFilteredOutputStream() {
 		return out;
 	}
-	@Override
-	public void close() throws IOException {
-            if (!streamClosed) {
-                streamClosed = true;
-		byte[] buffContents = bos.toByteArray();
+	
+        public void commitResponse() throws IOException {
+            if (!responseCommitted) {
+                responseCommitted = true;
+                byte[] buffContents = bos.toByteArray();
 		DataOutputStream dos = new DataOutputStream(out);
 		AJPUtil.writeBody(dos, buffContents);
-                AJPUtil.writeEndResponse(dos);
+                AJPUtil.writeEndResponse(dos, true);
 		bos.reset();
+                dos.flush();
                 WriteFinishedEvent e = new WriteFinishedEvent (t.getExchangeImpl());
                 t.getHttpContext().getServerImpl().addEvent (e);
             }
+        }
+        
+        @Override
+	public void close() throws IOException {
+            commitResponse();
 	}
 	
+        public void internalClose() throws IOException {
+            out.close();
+        }
+        
 	@Override
 	public void write(byte[] b) throws IOException {
 		bos.write(b);

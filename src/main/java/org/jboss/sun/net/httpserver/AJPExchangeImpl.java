@@ -25,7 +25,7 @@ class AJPExchangeImpl extends HttpExchange {
         this.rawIn = rawIn;
         this.rawOut = rawOut;
     }
-
+    
     public Headers getRequestHeaders () {
         return impl.getRequestHeaders();
     }
@@ -46,6 +46,16 @@ class AJPExchangeImpl extends HttpExchange {
         return impl.getHttpContext();
     }
 
+    public void commitResponse() {
+        try {
+            ajpOutputStream.commitResponse();
+            // make sure to clear out any streams created within ExchangeImpl
+            impl.getRequestBody().close();
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+    
     public void close () {
         try {
             ajpOutputStream.close();

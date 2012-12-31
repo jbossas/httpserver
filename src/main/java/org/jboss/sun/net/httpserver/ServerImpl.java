@@ -319,7 +319,6 @@ class ServerImpl implements TimeSource {
             HttpConnection c = t.getConnection();
             try {
                 if (r instanceof WriteFinishedEvent) {
-
                     int exchanges = endExchange();
                     if (terminating && exchanges == 0) {
                         finished = true;
@@ -341,6 +340,29 @@ class ServerImpl implements TimeSource {
                             connsToRegister.add (c);
                         }
                     }
+                } else if (r instanceof NonRegularAJPRequestFinishedEvent) {
+                    int exchanges = endExchange();
+                    if (terminating && exchanges == 0) {
+                        finished = true;
+                    }
+                    responseCompleted (c);
+                    connsToRegister.add (c);
+//                    LeftOverInputStream is = t.getOriginalInputStream();
+//                    if (!is.isEOF()) {
+//                        t.close = true;
+//                    }
+//                    if (t.close || idleConnections.size() >= maxIdleConnections) {
+//                        c.close();
+//                        allConnections.remove (c);
+//                    } else {
+//                        if (is.isDataBuffered()) {
+//                            /* don't re-enable the interestops, just handle it */
+//                            requestStarted (c);
+//                            handle (c.getChannel(), c);
+//                        } else {
+//                            connsToRegister.add (c);
+//                        }
+//                    }
                 }
             } catch (IOException e) {
                 logger.log (
@@ -420,7 +442,10 @@ class ServerImpl implements TimeSource {
                             allConnections.add (c);
                         } else {
                             try {
-                                if (key.isReadable()) {
+                                if (!key.isValid()) {
+                                    HttpConnection conn = (HttpConnection)key.attachment();
+                                    closeConnection(conn);
+                                } else if (key.isReadable()) {
                                     boolean closed;
                                     SocketChannel chan = (SocketChannel)key.channel();
                                     HttpConnection conn = (HttpConnection)key.attachment();
@@ -542,100 +567,123 @@ class ServerImpl implements TimeSource {
             SSLStreams sslStreams = null;
             if (ajp) {
             	try {
+                    if (context != null ) {
+                        this.rawin = connection.getInputStream();
+                        this.rawout = connection.getRawOutputStream();
+                        newconnection = false;
+                    } else {
+                        /* figure out what kind of connection this is */
+                        newconnection = true;
             		rawin = new Request.ReadStream (ServerImpl.this, chan);
             		rawout = new Request.WriteStream (ServerImpl.this, chan);
-            		RequestAJP req = new RequestAJP(rawin, rawout);
-            		Headers headers = req.headers();
-            		requestLine = req.requestLine();
-	                if (requestLine == null) {
-	                    /* connection closed */
-	                    closeConnection(connection);
-	                    return;
-	                }
-	                int space = requestLine.indexOf (' ');
-	                if (space == -1) {
-	                    reject (Code.HTTP_BAD_REQUEST, requestLine, "Bad request line");
-	                    return;
-	                }
-	                String method = requestLine.substring (0, space);
-	                int start = space+1;
-	                space = requestLine.indexOf(' ', start);
-	                if (space == -1) {
-	                    reject (Code.HTTP_BAD_REQUEST, requestLine, "Bad request line");
-	                    return;
-	                }
-	                String uriStr = requestLine.substring (start, space);
-	                URI uri = new URI (uriStr);
-	                start = space+1;
-	                String version = requestLine.substring (start);
-	                String s = headers.getFirst ("Transfer-encoding");
-	                long clen = 0L;
-	                if (s !=null && s.equalsIgnoreCase ("chunked")) {
-	                    clen = -1L;
-	                } else {
-	                    s = headers.getFirst ("Content-Length");
-	                    if (s != null) {
-	                        clen = Long.parseLong(s);
-	                    }
-	                    if (clen == 0) {
-	                        requestCompleted (connection);
-	                    }
-	                }
-	                ctx = contexts.findContext (protocol, uri.getPath());
-	                if (ctx == null) {
-	                    reject (Code.HTTP_NOT_FOUND, requestLine, "No context found for request");
-	                    return;
-	                }
-	                connection.setContext (ctx);
-	                if (ctx.getHandler() == null) {
-	                    reject (Code.HTTP_INTERNAL_ERROR, requestLine, "No handler for context");
-	                    return;
-	                }
-	                tx = new ExchangeImpl (method, uri, req, clen, connection);
-	                String chdr = headers.getFirst("Connection");
-	                Headers rheaders = tx.getResponseHeaders();
-	
-	                if (chdr != null && chdr.equalsIgnoreCase ("close")) {
-	                    tx.close = true;
-	                }
-	                if (version.equalsIgnoreCase ("http/1.0")) {
-	                    tx.http10 = true;
-	                    if (chdr == null) {
-	                        tx.close = true;
-	                        rheaders.set ("Connection", "close");
-	                    } else if (chdr.equalsIgnoreCase ("keep-alive")) {
-	                        rheaders.set ("Connection", "keep-alive");
-	                        int idle=(int)idleInterval/1000;
-	                        int max=(int)maxIdleConnections;
-	                        String val = "timeout="+idle+", max="+max;
-	                        rheaders.set ("Keep-Alive", val);
-	                    }
-	                }
-	
-                    connection.setParameters (
-                        rawin, rawout, chan, engine, sslStreams,
-                        sslContext, protocol, ctx, rawin
-                    );
+                    }
+                    RequestAJP req = new RequestAJP(rawin, rawout);
+                    if (!req.isRegularRequest()) {
+                        connection.setParameters (
+                            rawin, rawout, chan, engine, sslStreams,
+                            sslContext, protocol, ctx, rawin
+                        );
+                        if (req.isShouldClose()) {
+                            closeConnection(connection);
+                            return;
+                        } else {
+                            tx = new ExchangeImpl (null, null, req, 0, ServerImpl.this, connection);
+                            NonRegularAJPRequestFinishedEvent e = new NonRegularAJPRequestFinishedEvent(tx);
+                            ServerImpl.this.addEvent (e);
+                        }
+                    } else {
+                        Headers headers = req.headers();
+                        requestLine = req.requestLine();
+                        if (requestLine == null) {
+                            /* connection closed */
+                            closeConnection(connection);
+                            return;
+                        }
+                        int space = requestLine.indexOf (' ');
+                        if (space == -1) {
+                            reject (Code.HTTP_BAD_REQUEST, requestLine, "Bad request line");
+                            return;
+                        }
+                        String method = requestLine.substring (0, space);
+                        int start = space+1;
+                        space = requestLine.indexOf(' ', start);
+                        if (space == -1) {
+                            reject (Code.HTTP_BAD_REQUEST, requestLine, "Bad request line");
+                            return;
+                        }
+                        String uriStr = requestLine.substring (start, space);
+                        URI uri = new URI (uriStr);
+                        start = space+1;
+                        String version = requestLine.substring (start);
+                        String s = headers.getFirst ("Transfer-encoding");
+                        long clen = 0L;
+                        if (s !=null && s.equalsIgnoreCase ("chunked")) {
+                            clen = -1L;
+                        } else {
+                            s = headers.getFirst ("Content-Length");
+                            if (s != null) {
+                                clen = Long.parseLong(s);
+                            }
+                            if (clen == 0) {
+                                requestCompleted (connection);
+                            }
+                        }
+                        ctx = contexts.findContext (protocol, uri.getPath());
+                        if (ctx == null) {
+                            reject (Code.HTTP_NOT_FOUND, requestLine, "No context found for request");
+                            return;
+                        }
+                        connection.setContext (ctx);
+                        if (ctx.getHandler() == null) {
+                            reject (Code.HTTP_INTERNAL_ERROR, requestLine, "No handler for context");
+                            return;
+                        }
+                        tx = new ExchangeImpl (method, uri, req, clen, ServerImpl.this, connection);
+                        String chdr = headers.getFirst("Connection");
+                        Headers rheaders = tx.getResponseHeaders();
 
-	                /* uf is the list of filters seen/set by the user.
-	                 * sf is the list of filters established internally
-	                 * and which are not visible to the user. uc and sc
-	                 * are the corresponding Filter.Chains.
-	                 * They are linked together by a LinkHandler
-	                 * so that they can both be invoked in one call.
-	                 */
-	                List<Filter> sf = ctx.getSystemFilters();
-	                List<Filter> uf = ctx.getFilters();
-	
-	                Filter.Chain sc = new Filter.Chain(sf, ctx.getHandler());
-	                Filter.Chain uc = new Filter.Chain(uf, new LinkHandler (sc));
-	
-	                /* set up the two stream references */
-	                tx.getRequestBody();
-	                tx.getResponseBody();
+                        if (chdr != null && chdr.equalsIgnoreCase ("close")) {
+                            tx.close = true;
+                        }
+                        if (version.equalsIgnoreCase ("http/1.0")) {
+                            tx.http10 = true;
+                            if (chdr == null) {
+                                tx.close = true;
+                                rheaders.set ("Connection", "close");
+                            } else if (chdr.equalsIgnoreCase ("keep-alive")) {
+                                rheaders.set ("Connection", "keep-alive");
+                                int idle=(int)idleInterval/1000;
+                                int max=(int)maxIdleConnections;
+                                String val = "timeout="+idle+", max="+max;
+                                rheaders.set ("Keep-Alive", val);
+                            }
+                        }
+
+                        connection.setParameters (
+                            rawin, rawout, chan, engine, sslStreams,
+                            sslContext, protocol, ctx, rawin
+                        );
+
+                        /* uf is the list of filters seen/set by the user.
+                         * sf is the list of filters established internally
+                         * and which are not visible to the user. uc and sc
+                         * are the corresponding Filter.Chains.
+                         * They are linked together by a LinkHandler
+                         * so that they can both be invoked in one call.
+                         */
+                        List<Filter> sf = ctx.getSystemFilters();
+                        List<Filter> uf = ctx.getFilters();
+
+                        Filter.Chain sc = new Filter.Chain(sf, ctx.getHandler());
+                        Filter.Chain uc = new Filter.Chain(uf, new LinkHandler (sc));
+
+                        /* set up the two stream references */
+                        tx.getRequestBody();
+                        tx.getResponseBody();
                         AJPExchangeImpl ajpExchangeImpl = new AJPExchangeImpl(tx, rawin, rawout);
-	                uc.doFilter(ajpExchangeImpl);
-                        ajpExchangeImpl.close();
+                        uc.doFilter(ajpExchangeImpl);
+                        ajpExchangeImpl.commitResponse();
+                    }
             	} catch (IOException e1) {
             		e1.printStackTrace();
 	                logger.log (Level.FINER, "ServerImpl.Exchange (1)", e1);
@@ -734,7 +782,7 @@ class ServerImpl implements TimeSource {
 	                    return;
 	                }
 	                tx = new ExchangeImpl (
-	                    method, uri, req, clen, connection
+	                    method, uri, req, clen, ServerImpl.this, connection
 	                );
 	                String chdr = headers.getFirst("Connection");
 	                Headers rheaders = tx.getResponseHeaders();

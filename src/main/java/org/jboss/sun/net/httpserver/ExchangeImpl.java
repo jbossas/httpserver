@@ -98,19 +98,21 @@ class ExchangeImpl {
     ServerImpl server;
 
     ExchangeImpl (
-        String m, URI u, Request req, long len, HttpConnection connection
+        String m, URI u, Request req, long len, ServerImpl serverImpl, HttpConnection connection
     ) throws IOException {
         this.req = req;
-        this.reqHdrs = req.headers();
-        this.rspHdrs = new Headers();
         this.method = m;
         this.uri = u;
         this.connection = connection;
         this.reqContentLen = len;
+        if (m != null) {
+            this.reqHdrs = req.headers();
+            this.rspHdrs = new Headers();
+        }
         /* ros only used for headers, body written directly to stream */
         this.ros = req.outputStream();
         this.ris = req.inputStream();
-        server = getServerImpl();
+        server = serverImpl;
         server.startExchange();
     }
 

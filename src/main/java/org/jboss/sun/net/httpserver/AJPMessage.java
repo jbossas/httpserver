@@ -2,15 +2,19 @@ package org.jboss.sun.net.httpserver;
 
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
+import java.io.EOFException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.logging.Logger;
 
 import org.jboss.com.sun.net.httpserver.Headers;
 
 public class AJPMessage {
 
+    private static Logger log = Logger.getLogger(AJPMessage.class.getCanonicalName());
+    
     public static final byte REQ_ATTRIBUTE_CONTEXT = 1;  // Unused
     public static final byte REQ_ATTRIBUTE_SERVLET_PATH = 2;  // Unused
     public static final byte REQ_ATTRIBUTE_REMOTE_USER = 3;
@@ -81,14 +85,18 @@ public class AJPMessage {
     }
 
     public int readType() throws IOException {
-        byte byte1 = dis.readByte();
-        byte byte2 = dis.readByte();
-        if (byte1 != 18 || byte2 != 52) {
-            throw new RuntimeException("Unexpected bytes!");
+        try {
+            byte byte1 = dis.readByte();
+            byte byte2 = dis.readByte();
+            if (byte1 != 18 || byte2 != 52) {
+                throw new RuntimeException("Unexpected bytes!");
+            }
+            this.packetLen = readIntUnsigned(dis);
+            this.requestType = (int) dis.readByte();
+            return this.requestType;
+        } catch (EOFException e) {
+            return -1;
         }
-        this.packetLen = readIntUnsigned(dis);
-        this.requestType = (int) dis.readByte();
-        return this.requestType;
     }
 
     public String readFirstRequestLine() throws IOException {
@@ -219,6 +227,8 @@ public class AJPMessage {
                     //System.out.println("Val: " + val);
                 }
             }
+        } else {
+            log.warning("Received unsupported request type: " + requestType);
         }
     }
 

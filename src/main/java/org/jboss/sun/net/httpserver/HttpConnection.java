@@ -113,7 +113,11 @@ class HttpConnection {
         this.chan = chan;
         this.sslContext = sslContext;
         this.sslStreams = sslStreams;
-        this.logger = context.getLogger();
+        if (context != null) {
+            this.logger = context.getLogger();
+        } else {
+            this.logger = server.getLogger();
+        }
     }
 
     SocketChannel getChannel () {
