@@ -66,7 +66,7 @@ public class AJPUtil {
                 
                 // Number of headers
                 int numHeaders = 0;
-                if (!rspHeaders.containsKey("Content-Length")) {
+                if (!rspHeaders.containsKey("Content-Length") && contentLength > 0) {
                     numHeaders++;
                 }
                 for (Map.Entry<String, List<String>> entry : rspHeaders.entrySet()) {

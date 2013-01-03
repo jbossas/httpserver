@@ -319,6 +319,7 @@ class ServerImpl implements TimeSource {
             HttpConnection c = t.getConnection();
             try {
                 if (r instanceof WriteFinishedEvent) {
+                    WriteFinishedEvent rfe = (WriteFinishedEvent)r;
                     int exchanges = endExchange();
                     if (terminating && exchanges == 0) {
                         finished = true;
@@ -347,22 +348,6 @@ class ServerImpl implements TimeSource {
                     }
                     responseCompleted (c);
                     connsToRegister.add (c);
-//                    LeftOverInputStream is = t.getOriginalInputStream();
-//                    if (!is.isEOF()) {
-//                        t.close = true;
-//                    }
-//                    if (t.close || idleConnections.size() >= maxIdleConnections) {
-//                        c.close();
-//                        allConnections.remove (c);
-//                    } else {
-//                        if (is.isDataBuffered()) {
-//                            /* don't re-enable the interestops, just handle it */
-//                            requestStarted (c);
-//                            handle (c.getChannel(), c);
-//                        } else {
-//                            connsToRegister.add (c);
-//                        }
-//                    }
                 }
             } catch (IOException e) {
                 logger.log (

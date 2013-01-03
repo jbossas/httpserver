@@ -177,12 +177,17 @@ class ExchangeImpl {
         if (uis != null) {
             return uis;
         }
-        if (reqContentLen == -1L) {
-            uis_orig = new ChunkedInputStream (this, ris);
-            uis = uis_orig;
+        if (req instanceof RequestAJP) {
+           uis_orig = new AJPInputStream(this, ris, ros); 
+           uis = uis_orig;
         } else {
-            uis_orig = new FixedLengthInputStream (this, ris, reqContentLen);
-            uis = uis_orig;
+            if (reqContentLen == -1L) {
+                uis_orig = new ChunkedInputStream (this, ris);
+                uis = uis_orig;
+            } else {
+                uis_orig = new FixedLengthInputStream (this, ris, reqContentLen);
+                uis = uis_orig;
+            }
         }
         return uis;
     }

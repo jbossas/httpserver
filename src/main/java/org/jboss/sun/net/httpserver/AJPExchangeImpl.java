@@ -70,10 +70,7 @@ class AJPExchangeImpl extends HttpExchange {
     }
 
     public InputStream getRequestBody () {
-        if (ajpInputStream == null) {
-            ajpInputStream = new AJPInputStream(impl, rawIn, rawOut);
-        }
-        return ajpInputStream;
+        return impl.getRequestBody();
     }
 
     public AJPOutputStream getResponseBody () {
