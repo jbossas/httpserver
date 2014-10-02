@@ -70,7 +70,8 @@ class SSLStreams {
         this.chan= chan;
         InetSocketAddress addr =
                 (InetSocketAddress)chan.socket().getRemoteSocketAddress();
-        engine = sslctx.createSSLEngine (addr.getHostName(), addr.getPort());
+        // This is the server side of the connection so we do not need to hint as to the clients address.
+        engine = sslctx.createSSLEngine ();
         engine.setUseClientMode (false);
         HttpsConfigurator cfg = server.getHttpsConfigurator();
         configureEngine (cfg, addr);
