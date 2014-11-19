@@ -115,7 +115,7 @@ class ExchangeImpl {
     }
 
     public Headers getRequestHeaders () {
-        return new UnmodifiableHeaders (reqHdrs);
+        return reqHdrs;
     }
 
     public Headers getResponseHeaders () {
@@ -137,7 +137,7 @@ class ExchangeImpl {
     private boolean isHeadRequest() {
         return HEAD.equals(getRequestMethod());
     }
-    
+
     public ServerConfig getServerConfig() {
         return server.getServerConfig();
     }
