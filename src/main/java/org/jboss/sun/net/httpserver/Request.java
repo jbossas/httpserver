@@ -178,6 +178,10 @@ class Request {
                         c = ' ';
                         break;
                     }
+                    if (s.length >= ServerConfig.getMaxReqHeaderSize()) {
+                        throw new IOException("Maximum size of request header ("
+                                + "sun.net.httpserver.maxReqHeaderSize) exceeded, " + ServerConfig.getMaxReqHeaderSize() + ".");
+                    }
                     if (len >= s.length) {
                         char ns[] = new char[s.length * 2];
                         System.arraycopy(s, 0, ns, 0, len);
@@ -205,7 +209,13 @@ class Request {
                 v = new String();
             else
                 v = String.copyValueOf(s, keyend, len - keyend);
-            hdrs.add (k,v);
+
+            if (hdrs.size() >= ServerConfig.getMaxReqHeaders()) {
+                throw new IOException("Maximum number of request headers (" + "sun.net.httpserver.maxReqHeaders) exceeded, "
+                        + ServerConfig.getMaxReqHeaders() + ".");
+            }
+
+            hdrs.add(k, v);
             len = 0;
         }
         return hdrs;

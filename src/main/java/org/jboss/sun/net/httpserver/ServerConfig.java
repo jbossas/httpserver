@@ -48,10 +48,17 @@ class ServerConfig {
     static final long DEFAULT_TIMER_MILLIS = 1000;
 
     static final long DEFAULT_DRAIN_AMOUNT = 64 * 1024;
+    static final long DEFAULT_MAX_REQ_HEADER_SIZE = 1024 * 1024;
+    static final int  DEFAULT_MAX_REQ_HEADERS = 200;
 
     final long idleInterval;
     final long drainAmount; // max # of bytes to drain from an inputstream
     final int maxIdleConnections;
+
+    // The maximum size of request header allowable
+    private static long maxReqHeaderSize;
+    // The maximum number of request headers allowable
+    private static long maxReqHeaders;
 
     // max time a request or response is allowed to take
     final long maxReqTime;
@@ -68,6 +75,8 @@ class ServerConfig {
         clockTick = getIntegerProperty(configuration, "sun.net.httpserver.clockTick", DEFAULT_CLOCK_TICK);
         maxIdleConnections = getIntegerProperty(configuration, "sun.net.httpserver.maxIdleConnections", DEFAULT_MAX_IDLE_CONNECTIONS);
         drainAmount = getLongProperty(configuration, "sun.net.httpserver.drainAmount", DEFAULT_DRAIN_AMOUNT);
+        maxReqHeaderSize = getLongProperty(configuration, "sun.net.httpserver.maxReqHeaderSize", DEFAULT_MAX_REQ_HEADER_SIZE);
+        maxReqHeaders = getLongProperty(configuration, "sun.net.httpserver.maxReqHeaders", DEFAULT_MAX_REQ_HEADERS);
         maxReqTime = getLongProperty(configuration, "sun.net.httpserver.maxReqTime", DEFAULT_MAX_REQ_TIME);
         maxRspTime = getLongProperty(configuration, "sun.net.httpserver.maxRspTime", DEFAULT_MAX_RSP_TIME);
         timerMillis = getLongProperty(configuration, "sun.net.httpserver.timerMillis", DEFAULT_TIMER_MILLIS);
@@ -115,6 +124,14 @@ class ServerConfig {
 
     long getDrainAmount() {
         return drainAmount;
+    }
+
+    static long getMaxReqHeaderSize() {
+        return maxReqHeaderSize;
+    }
+
+    static long getMaxReqHeaders() {
+        return maxReqHeaders;
     }
 
     long getMaxReqTime() {
