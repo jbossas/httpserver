@@ -11,7 +11,7 @@
     <parent>
         <groupId>org.jboss</groupId>
         <artifactId>jboss-parent</artifactId>
-        <version>5</version>
+        <version>16</version>
     </parent>
 
     <name>Lightweight HTTP Server</name>
@@ -47,4 +47,10 @@
             </plugin>
         </plugins>
     </build>
+
+    <scm>
+        <connection>scm:git:https://github.com/jbossas/httpserver.git</connection>
+        <developerConnection>scm:git:git@github.com:jbossas/httpserver.git</developerConnection>
+        <url>https://github.com/jbossas/httpserver</url>
+    </scm>
 </project>
