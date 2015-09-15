@@ -178,6 +178,10 @@ class Request {
                         c = ' ';
                         break;
                     }
+                    if (s.length >= ServerConfig.getMaxReqHeaderSize()) {
+                        throw new IOException("Maximum size of request header ("
+                                + "sun.net.httpserver.maxReqHeaderSize) exceeded, " + ServerConfig.getMaxReqHeaderSize() + ".");
+                    }
                     if (len >= s.length) {
                         char ns[] = new char[s.length * 2];
                         System.arraycopy(s, 0, ns, 0, len);
