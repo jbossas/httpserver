@@ -48,7 +48,7 @@ class ServerConfig {
     static final long DEFAULT_TIMER_MILLIS = 1000;
 
     static final long DEFAULT_DRAIN_AMOUNT = 64 * 1024;
-    static final long DEFAULT_MAX_REQ_HEADER_SIZE = 8192;
+    static final long DEFAULT_MAX_REQ_HEADER_SIZE = 1024 * 1024;
     static final int  DEFAULT_MAX_REQ_HEADERS = 200;
 
     final long idleInterval;
