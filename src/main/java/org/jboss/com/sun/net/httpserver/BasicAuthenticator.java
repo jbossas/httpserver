@@ -25,6 +25,12 @@
 
 package org.jboss.com.sun.net.httpserver;
 
+import java.nio.charset.Charset;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.regex.Pattern;
+
 /**
  * BasicAuthenticator provides an implementation of HTTP Basic
  * authentication. It is an abstract class and must be extended
@@ -33,7 +39,11 @@ package org.jboss.com.sun.net.httpserver;
  */
 public abstract class BasicAuthenticator extends Authenticator {
 
+    public static final Charset DEFAULT_CHARSET = Charset.forName("UTF-8");
     protected String realm;
+
+    private Map<Pattern, Charset> browserCharsetMap;
+    private Charset defaultCharset;
 
     /**
      * Creates a BasicAuthenticator for the given HTTP realm
@@ -41,7 +51,23 @@ public abstract class BasicAuthenticator extends Authenticator {
      * @throws NullPointerException if the realm is an empty string
      */
     public BasicAuthenticator (String realm) {
+        this(realm, DEFAULT_CHARSET, Collections.<Pattern, Charset>emptyMap());
+    }
+
+    /**
+     * Creates a BasicAuthenticator for the given HTTP realm.
+     *
+     * browserCharsetMap is used to specify a character encoding used to decode BASIC authentication response depending
+     * on the browser that issued it.
+     *
+     * @param realm The HTTP Basic authentication realm
+     * @param defaultCharset charset that should be used to decode credentials if the user agent is not listed in browserCharsetMap
+     * @param browserCharsetMap map indexed by Patterns representing User-Agent strings with the charset as values
+     */
+    public BasicAuthenticator (String realm, Charset defaultCharset, Map<Pattern, Charset> browserCharsetMap) {
         this.realm = realm;
+        this.defaultCharset = defaultCharset;
+        this.browserCharsetMap = Collections.unmodifiableMap(new HashMap<Pattern, Charset>(browserCharsetMap));
     }
 
     /**
@@ -69,7 +95,19 @@ public abstract class BasicAuthenticator extends Authenticator {
             return new Authenticator.Failure (401);
         }
         byte[] b = Base64.base64ToByteArray (auth.substring(sp+1));
-        String userpass = new String (b);
+
+        Charset charset = DEFAULT_CHARSET;
+        if (!browserCharsetMap.isEmpty()) {
+            String userAgent = rmap.getFirst("User-Agent");
+            for (Map.Entry<Pattern, Charset> entry : browserCharsetMap.entrySet()) {
+                if (entry.getKey().matcher(userAgent).matches()) {
+                    charset = entry.getValue();
+                }
+            }
+
+        }
+
+        String userpass = new String (b, charset);
         int colon = userpass.indexOf (':');
         String uname = userpass.substring (0, colon);
         String pass = userpass.substring (colon+1);
