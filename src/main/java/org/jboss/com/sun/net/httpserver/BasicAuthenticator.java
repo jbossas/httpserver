@@ -99,12 +99,13 @@ public abstract class BasicAuthenticator extends Authenticator {
         Charset charset = DEFAULT_CHARSET;
         if (!browserCharsetMap.isEmpty()) {
             String userAgent = rmap.getFirst("User-Agent");
-            for (Map.Entry<Pattern, Charset> entry : browserCharsetMap.entrySet()) {
-                if (entry.getKey().matcher(userAgent).matches()) {
-                    charset = entry.getValue();
+            if (userAgent != null) {
+                for (Map.Entry<Pattern, Charset> entry : browserCharsetMap.entrySet()) {
+                    if (entry.getKey().matcher(userAgent).matches()) {
+                        charset = entry.getValue();
+                    }
                 }
             }
-
         }
 
         String userpass = new String (b, charset);
