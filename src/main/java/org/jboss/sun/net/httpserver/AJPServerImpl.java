@@ -29,29 +29,28 @@ import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.util.Map;
 import java.util.concurrent.Executor;
-
+import org.jboss.com.sun.net.httpserver.AJPServer;
 import org.jboss.com.sun.net.httpserver.HttpContext;
 import org.jboss.com.sun.net.httpserver.HttpHandler;
-import org.jboss.com.sun.net.httpserver.HttpServer;
 
-public class HttpServerImpl extends HttpServer {
+public class AJPServerImpl extends AJPServer {
 
     ServerImpl server;
 
-    HttpServerImpl () throws IOException {
-        this (new InetSocketAddress(80), 0);
+    AJPServerImpl () throws IOException {
+        this (new InetSocketAddress(8009), 0);
     }
 
-    HttpServerImpl (
+    AJPServerImpl (
         InetSocketAddress addr, int backlog
     ) throws IOException {
         this(addr, backlog, null);
     }
     
-    HttpServerImpl (
+    AJPServerImpl (
             InetSocketAddress addr, int backlog, Map<String, String> configuration
         ) throws IOException {
-            server = new ServerImpl (this, "http", addr, backlog, configuration, false);
+            server = new ServerImpl (this, "http", addr, backlog, configuration, true);
         }    
     
 

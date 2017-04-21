@@ -34,6 +34,14 @@ class Event {
     }
 }
 
+class NonRegularAJPRequestFinishedEvent extends Event {
+    NonRegularAJPRequestFinishedEvent (ExchangeImpl t) {
+        super (t);
+        //DISABLED assert !t.writefinished;
+        t.writefinished = true;
+    }
+}
+
 class WriteFinishedEvent extends Event {
     WriteFinishedEvent (ExchangeImpl t) {
         super (t);

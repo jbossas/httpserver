@@ -28,12 +28,19 @@ package org.jboss.sun.net.httpserver;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.util.Map;
+import org.jboss.com.sun.net.httpserver.AJPServer;
 
 import org.jboss.com.sun.net.httpserver.HttpServer;
 import org.jboss.com.sun.net.httpserver.HttpsServer;
 import org.jboss.com.sun.net.httpserver.spi.HttpServerProvider;
 
 public class DefaultHttpServerProvider extends HttpServerProvider {
+
+    @Override
+    public AJPServer createAJPServer(InetSocketAddress addr, int backlog, Map<String, String> configuration) throws IOException {
+        return new AJPServerImpl (addr, backlog, configuration);
+    }
+    
     public HttpServer createHttpServer (InetSocketAddress addr, int backlog, Map<String, String> configuration) throws IOException {
         return new HttpServerImpl (addr, backlog, configuration);
     }

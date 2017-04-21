@@ -98,19 +98,21 @@ class ExchangeImpl {
     ServerImpl server;
 
     ExchangeImpl (
-        String m, URI u, Request req, long len, HttpConnection connection
+        String m, URI u, Request req, long len, ServerImpl serverImpl, HttpConnection connection
     ) throws IOException {
         this.req = req;
-        this.reqHdrs = req.headers();
-        this.rspHdrs = new Headers();
         this.method = m;
         this.uri = u;
         this.connection = connection;
         this.reqContentLen = len;
+        if (m != null) {
+            this.reqHdrs = req.headers();
+            this.rspHdrs = new Headers();
+        }
         /* ros only used for headers, body written directly to stream */
         this.ros = req.outputStream();
         this.ris = req.inputStream();
-        server = getServerImpl();
+        server = serverImpl;
         server.startExchange();
     }
 
@@ -175,12 +177,17 @@ class ExchangeImpl {
         if (uis != null) {
             return uis;
         }
-        if (reqContentLen == -1L) {
-            uis_orig = new ChunkedInputStream (this, ris);
-            uis = uis_orig;
+        if (req instanceof RequestAJP) {
+           uis_orig = new AJPInputStream(this, ris, ros); 
+           uis = uis_orig;
         } else {
-            uis_orig = new FixedLengthInputStream (this, ris, reqContentLen);
-            uis = uis_orig;
+            if (reqContentLen == -1L) {
+                uis_orig = new ChunkedInputStream (this, ris);
+                uis = uis_orig;
+            } else {
+                uis_orig = new FixedLengthInputStream (this, ris, reqContentLen);
+                uis = uis_orig;
+            }
         }
         return uis;
     }
@@ -456,6 +463,8 @@ class ExchangeImpl {
     static ExchangeImpl get (HttpExchange t) {
         if (t instanceof HttpExchangeImpl) {
             return ((HttpExchangeImpl)t).getExchangeImpl();
+        } else if (t instanceof AJPExchangeImpl) {
+            return ((AJPExchangeImpl)t).getExchangeImpl();
         } else {
             //DISABLED assert t instanceof HttpsExchangeImpl;
             return ((HttpsExchangeImpl)t).getExchangeImpl();

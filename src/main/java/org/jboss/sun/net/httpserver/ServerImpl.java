@@ -70,6 +70,7 @@ import org.jboss.sun.net.httpserver.HttpConnection.State;
 class ServerImpl implements TimeSource {
 
     private String protocol;
+    private boolean ajp;
     private boolean https;
     private Executor executor;
     private HttpsConfigurator httpsConfig;
@@ -114,11 +115,11 @@ class ServerImpl implements TimeSource {
     ServerImpl (
         HttpServer wrapper, String protocol, InetSocketAddress addr, int backlog
     ) throws IOException {
-        this(wrapper, protocol, addr, backlog, null);
+        this(wrapper, protocol, addr, backlog, null, false);
     }
 
     ServerImpl (
-            HttpServer wrapper, String protocol, InetSocketAddress addr, int backlog, Map<String, String> configuration
+            HttpServer wrapper, String protocol, InetSocketAddress addr, int backlog, Map<String, String> configuration, boolean ajp
         ) throws IOException {
         ServerConfig sc = new ServerConfig(configuration);
         clockTick = sc.getClockTick();
@@ -163,7 +164,8 @@ class ServerImpl implements TimeSource {
             logger.config ("MAX_RSP_TIME:  "+maxRspTime);
         }
         events = new LinkedList<Event>();
-        logger.config ("HttpServer created "+protocol+" "+ addr);
+        this.ajp = ajp;
+        logger.config ("HttpServer created "+protocol+" "+ addr+", is AJP? " + ajp);
     }
 
     public void bind (InetSocketAddress addr, int backlog) throws IOException {
@@ -317,7 +319,7 @@ class ServerImpl implements TimeSource {
             HttpConnection c = t.getConnection();
             try {
                 if (r instanceof WriteFinishedEvent) {
-
+                    WriteFinishedEvent rfe = (WriteFinishedEvent)r;
                     int exchanges = endExchange();
                     if (terminating && exchanges == 0) {
                         finished = true;
@@ -339,6 +341,13 @@ class ServerImpl implements TimeSource {
                             connsToRegister.add (c);
                         }
                     }
+                } else if (r instanceof NonRegularAJPRequestFinishedEvent) {
+                    int exchanges = endExchange();
+                    if (terminating && exchanges == 0) {
+                        finished = true;
+                    }
+                    responseCompleted (c);
+                    connsToRegister.add (c);
                 }
             } catch (IOException e) {
                 logger.log (
@@ -418,7 +427,10 @@ class ServerImpl implements TimeSource {
                             allConnections.add (c);
                         } else {
                             try {
-                                if (key.isReadable()) {
+                                if (!key.isValid()) {
+                                    HttpConnection conn = (HttpConnection)key.attachment();
+                                    closeConnection(conn);
+                                } else if (key.isReadable()) {
                                     boolean closed;
                                     SocketChannel chan = (SocketChannel)key.channel();
                                     HttpConnection conn = (HttpConnection)key.attachment();
@@ -538,162 +550,298 @@ class ServerImpl implements TimeSource {
             SSLEngine engine = null;
             String requestLine = null;
             SSLStreams sslStreams = null;
-            try {
-                if (context != null ) {
-                    this.rawin = connection.getInputStream();
-                    this.rawout = connection.getRawOutputStream();
-                    newconnection = false;
-                } else {
-                    /* figure out what kind of connection this is */
-                    newconnection = true;
-                    if (https) {
-                        if (sslContext == null) {
-                            logger.warning ("SSL connection received. No https contxt created");
-                            throw new HttpError ("No SSL context established");
-                        }
-                        sslStreams = new SSLStreams (ServerImpl.this, sslContext, chan);
-                        rawin = sslStreams.getInputStream();
-                        rawout = sslStreams.getOutputStream();
-                        engine = sslStreams.getSSLEngine();
-                        connection.sslStreams = sslStreams;
+            if (ajp) {
+            	try {
+                    if (context != null ) {
+                        this.rawin = connection.getInputStream();
+                        this.rawout = connection.getRawOutputStream();
+                        newconnection = false;
                     } else {
-                        rawin = new BufferedInputStream(
-                            new Request.ReadStream (
-                                ServerImpl.this, chan
-                        ));
-                        rawout = new Request.WriteStream (
-                            ServerImpl.this, chan
+                        /* figure out what kind of connection this is */
+                        newconnection = true;
+            		rawin = new Request.ReadStream (ServerImpl.this, chan);
+            		rawout = new Request.WriteStream (ServerImpl.this, chan);
+                    }
+                    RequestAJP req = new RequestAJP(rawin, rawout);
+                    if (!req.isRegularRequest()) {
+                        connection.setParameters (
+                            rawin, rawout, chan, engine, sslStreams,
+                            sslContext, protocol, ctx, rawin
                         );
+                        if (req.isShouldClose()) {
+                            closeConnection(connection);
+                            return;
+                        } else {
+                            tx = new ExchangeImpl (null, null, req, 0, ServerImpl.this, connection);
+                            NonRegularAJPRequestFinishedEvent e = new NonRegularAJPRequestFinishedEvent(tx);
+                            ServerImpl.this.addEvent (e);
+                        }
+                    } else {
+                        Headers headers = req.headers();
+                        requestLine = req.requestLine();
+                        if (requestLine == null) {
+                            /* connection closed */
+                            closeConnection(connection);
+                            return;
+                        }
+                        int space = requestLine.indexOf (' ');
+                        if (space == -1) {
+                            reject (Code.HTTP_BAD_REQUEST, requestLine, "Bad request line");
+                            return;
+                        }
+                        String method = requestLine.substring (0, space);
+                        int start = space+1;
+                        space = requestLine.indexOf(' ', start);
+                        if (space == -1) {
+                            reject (Code.HTTP_BAD_REQUEST, requestLine, "Bad request line");
+                            return;
+                        }
+                        String uriStr = requestLine.substring (start, space);
+                        URI uri = new URI (uriStr);
+                        start = space+1;
+                        String version = requestLine.substring (start);
+                        String s = headers.getFirst ("Transfer-encoding");
+                        long clen = 0L;
+                        if (s !=null && s.equalsIgnoreCase ("chunked")) {
+                            clen = -1L;
+                        } else {
+                            s = headers.getFirst ("Content-Length");
+                            if (s != null) {
+                                clen = Long.parseLong(s);
+                            }
+                            if (clen == 0) {
+                                requestCompleted (connection);
+                            }
+                        }
+                        ctx = contexts.findContext (protocol, uri.getPath());
+                        if (ctx == null) {
+                            reject (Code.HTTP_NOT_FOUND, requestLine, "No context found for request");
+                            return;
+                        }
+                        connection.setContext (ctx);
+                        if (ctx.getHandler() == null) {
+                            reject (Code.HTTP_INTERNAL_ERROR, requestLine, "No handler for context");
+                            return;
+                        }
+                        tx = new ExchangeImpl (method, uri, req, clen, ServerImpl.this, connection);
+                        String chdr = headers.getFirst("Connection");
+                        Headers rheaders = tx.getResponseHeaders();
+
+                        if (chdr != null && chdr.equalsIgnoreCase ("close")) {
+                            tx.close = true;
+                        }
+                        if (version.equalsIgnoreCase ("http/1.0")) {
+                            tx.http10 = true;
+                            if (chdr == null) {
+                                tx.close = true;
+                                rheaders.set ("Connection", "close");
+                            } else if (chdr.equalsIgnoreCase ("keep-alive")) {
+                                rheaders.set ("Connection", "keep-alive");
+                                int idle=(int)idleInterval/1000;
+                                int max=(int)maxIdleConnections;
+                                String val = "timeout="+idle+", max="+max;
+                                rheaders.set ("Keep-Alive", val);
+                            }
+                        }
+
+                        connection.setParameters (
+                            rawin, rawout, chan, engine, sslStreams,
+                            sslContext, protocol, ctx, rawin
+                        );
+
+                        /* uf is the list of filters seen/set by the user.
+                         * sf is the list of filters established internally
+                         * and which are not visible to the user. uc and sc
+                         * are the corresponding Filter.Chains.
+                         * They are linked together by a LinkHandler
+                         * so that they can both be invoked in one call.
+                         */
+                        List<Filter> sf = ctx.getSystemFilters();
+                        List<Filter> uf = ctx.getFilters();
+
+                        Filter.Chain sc = new Filter.Chain(sf, ctx.getHandler());
+                        Filter.Chain uc = new Filter.Chain(uf, new LinkHandler (sc));
+
+                        /* set up the two stream references */
+                        tx.getRequestBody();
+                        tx.getResponseBody();
+                        AJPExchangeImpl ajpExchangeImpl = new AJPExchangeImpl(tx, rawin, rawout);
+                        uc.doFilter(ajpExchangeImpl);
+                        ajpExchangeImpl.commitResponse();
                     }
-                    connection.raw = rawin;
-                    connection.rawout = rawout;
-                }
-                Request req = new Request (rawin, rawout);
-                requestLine = req.requestLine();
-                if (requestLine == null) {
-                    /* connection closed */
-                    closeConnection(connection);
-                    return;
-                }
-                int space = requestLine.indexOf (' ');
-                if (space == -1) {
-                    reject (Code.HTTP_BAD_REQUEST,
-                            requestLine, "Bad request line");
-                    return;
-                }
-                String method = requestLine.substring (0, space);
-                int start = space+1;
-                space = requestLine.indexOf(' ', start);
-                if (space == -1) {
-                    reject (Code.HTTP_BAD_REQUEST,
-                            requestLine, "Bad request line");
-                    return;
-                }
-                String uriStr = requestLine.substring (start, space);
-                URI uri = new URI (uriStr);
-                start = space+1;
-                String version = requestLine.substring (start);
-                Headers headers = req.headers();
-                String s = headers.getFirst ("Transfer-encoding");
-                long clen = 0L;
-                if (s !=null && s.equalsIgnoreCase ("chunked")) {
-                    clen = -1L;
-                } else {
-                    s = headers.getFirst ("Content-Length");
-                    if (s != null) {
-                        clen = Long.parseLong(s);
-                    }
-                    if (clen == 0) {
-                        requestCompleted (connection);
-                    }
-                }
-                ctx = contexts.findContext (protocol, uri.getPath());
-                if (ctx == null) {
-                    reject (Code.HTTP_NOT_FOUND,
-                            requestLine, "No context found for request");
-                    return;
-                }
-                connection.setContext (ctx);
-                if (ctx.getHandler() == null) {
-                    reject (Code.HTTP_INTERNAL_ERROR,
-                            requestLine, "No handler for context");
-                    return;
-                }
-                tx = new ExchangeImpl (
-                    method, uri, req, clen, connection
-                );
-                String chdr = headers.getFirst("Connection");
-                Headers rheaders = tx.getResponseHeaders();
-
-                if (chdr != null && chdr.equalsIgnoreCase ("close")) {
-                    tx.close = true;
-                }
-                if (version.equalsIgnoreCase ("http/1.0")) {
-                    tx.http10 = true;
-                    if (chdr == null) {
-                        tx.close = true;
-                        rheaders.set ("Connection", "close");
-                    } else if (chdr.equalsIgnoreCase ("keep-alive")) {
-                        rheaders.set ("Connection", "keep-alive");
-                        int idle=(int)idleInterval/1000;
-                        int max=(int)maxIdleConnections;
-                        String val = "timeout="+idle+", max="+max;
-                        rheaders.set ("Keep-Alive", val);
-                    }
-                }
-
-                if (newconnection) {
-                    connection.setParameters (
-                        rawin, rawout, chan, engine, sslStreams,
-                        sslContext, protocol, ctx, rawin
-                    );
-                }
-                /* check if client sent an Expect 100 Continue.
-                 * In that case, need to send an interim response.
-                 * In future API may be modified to allow app to
-                 * be involved in this process.
-                 */
-                String exp = headers.getFirst("Expect");
-                if (exp != null && exp.equalsIgnoreCase ("100-continue")) {
-                    logReply (100, requestLine, null);
-                    sendReply (
-                        Code.HTTP_CONTINUE, false, null
-                    );
-                }
-                /* uf is the list of filters seen/set by the user.
-                 * sf is the list of filters established internally
-                 * and which are not visible to the user. uc and sc
-                 * are the corresponding Filter.Chains.
-                 * They are linked together by a LinkHandler
-                 * so that they can both be invoked in one call.
-                 */
-                List<Filter> sf = ctx.getSystemFilters();
-                List<Filter> uf = ctx.getFilters();
-
-                Filter.Chain sc = new Filter.Chain(sf, ctx.getHandler());
-                Filter.Chain uc = new Filter.Chain(uf, new LinkHandler (sc));
-
-                /* set up the two stream references */
-                tx.getRequestBody();
-                tx.getResponseBody();
-                if (https) {
-                    uc.doFilter (new HttpsExchangeImpl (tx));
-                } else {
-                    uc.doFilter (new HttpExchangeImpl (tx));
-                }
-
-            } catch (IOException e1) {
-                logger.log (Level.FINER, "ServerImpl.Exchange (1)", e1);
-                closeConnection(connection);
-            } catch (NumberFormatException e3) {
-                reject (Code.HTTP_BAD_REQUEST,
-                        requestLine, "NumberFormatException thrown");
-            } catch (URISyntaxException e) {
-                reject (Code.HTTP_BAD_REQUEST,
-                        requestLine, "URISyntaxException thrown");
-            } catch (Exception e4) {
-                logger.log (Level.FINER, "ServerImpl.Exchange (2)", e4);
-                closeConnection(connection);
+            	} catch (IOException e1) {
+            		e1.printStackTrace();
+	                logger.log (Level.FINER, "ServerImpl.Exchange (1)", e1);
+	                closeConnection(connection);
+	            } catch (NumberFormatException e3) {
+	                reject (Code.HTTP_BAD_REQUEST,
+	                        requestLine, "NumberFormatException thrown");
+	            //} catch (URISyntaxException e) {
+	                //reject (Code.HTTP_BAD_REQUEST,
+	                        //requestLine, "URISyntaxException thrown");
+	            } catch (Exception e4) {
+                        e4.printStackTrace();
+	                logger.log (Level.FINER, "ServerImpl.Exchange (2)", e4);
+	                closeConnection(connection);
+	            }
+            } else {
+	            try {
+	                if (context != null ) {
+	                    this.rawin = connection.getInputStream();
+	                    this.rawout = connection.getRawOutputStream();
+	                    newconnection = false;
+	                } else {
+	                    /* figure out what kind of connection this is */
+	                    newconnection = true;
+	                    if (https) {
+	                        if (sslContext == null) {
+	                            logger.warning ("SSL connection received. No https contxt created");
+	                            throw new HttpError ("No SSL context established");
+	                        }
+	                        sslStreams = new SSLStreams (ServerImpl.this, sslContext, chan);
+	                        rawin = sslStreams.getInputStream();
+	                        rawout = sslStreams.getOutputStream();
+	                        engine = sslStreams.getSSLEngine();
+	                        connection.sslStreams = sslStreams;
+	                    } else {
+	                        rawin = new BufferedInputStream(
+	                            new Request.ReadStream (
+	                                ServerImpl.this, chan
+	                        ));
+	                        rawout = new Request.WriteStream (
+	                            ServerImpl.this, chan
+	                        );
+	                    }
+	                    connection.raw = rawin;
+	                    connection.rawout = rawout;
+	                }
+	                Request req = new Request (rawin, rawout);
+	                requestLine = req.requestLine();
+	                if (requestLine == null) {
+	                    /* connection closed */
+	                    closeConnection(connection);
+	                    return;
+	                }
+	                int space = requestLine.indexOf (' ');
+	                if (space == -1) {
+	                    reject (Code.HTTP_BAD_REQUEST,
+	                            requestLine, "Bad request line");
+	                    return;
+	                }
+	                String method = requestLine.substring (0, space);
+	                int start = space+1;
+	                space = requestLine.indexOf(' ', start);
+	                if (space == -1) {
+	                    reject (Code.HTTP_BAD_REQUEST,
+	                            requestLine, "Bad request line");
+	                    return;
+	                }
+	                String uriStr = requestLine.substring (start, space);
+	                URI uri = new URI (uriStr);
+	                start = space+1;
+	                String version = requestLine.substring (start);
+	                Headers headers = req.headers();
+	                String s = headers.getFirst ("Transfer-encoding");
+	                long clen = 0L;
+	                if (s !=null && s.equalsIgnoreCase ("chunked")) {
+	                    clen = -1L;
+	                } else {
+	                    s = headers.getFirst ("Content-Length");
+	                    if (s != null) {
+	                        clen = Long.parseLong(s);
+	                    }
+	                    if (clen == 0) {
+	                        requestCompleted (connection);
+	                    }
+	                }
+	                ctx = contexts.findContext (protocol, uri.getPath());
+	                if (ctx == null) {
+	                    reject (Code.HTTP_NOT_FOUND,
+	                            requestLine, "No context found for request");
+	                    return;
+	                }
+	                connection.setContext (ctx);
+	                if (ctx.getHandler() == null) {
+	                    reject (Code.HTTP_INTERNAL_ERROR,
+	                            requestLine, "No handler for context");
+	                    return;
+	                }
+	                tx = new ExchangeImpl (
+	                    method, uri, req, clen, ServerImpl.this, connection
+	                );
+	                String chdr = headers.getFirst("Connection");
+	                Headers rheaders = tx.getResponseHeaders();
+	
+	                if (chdr != null && chdr.equalsIgnoreCase ("close")) {
+	                    tx.close = true;
+	                }
+	                if (version.equalsIgnoreCase ("http/1.0")) {
+	                    tx.http10 = true;
+	                    if (chdr == null) {
+	                        tx.close = true;
+	                        rheaders.set ("Connection", "close");
+	                    } else if (chdr.equalsIgnoreCase ("keep-alive")) {
+	                        rheaders.set ("Connection", "keep-alive");
+	                        int idle=(int)idleInterval/1000;
+	                        int max=(int)maxIdleConnections;
+	                        String val = "timeout="+idle+", max="+max;
+	                        rheaders.set ("Keep-Alive", val);
+	                    }
+	                }
+	
+	                if (newconnection) {
+	                    connection.setParameters (
+	                        rawin, rawout, chan, engine, sslStreams,
+	                        sslContext, protocol, ctx, rawin
+	                    );
+	                }
+	                /* check if client sent an Expect 100 Continue.
+	                 * In that case, need to send an interim response.
+	                 * In future API may be modified to allow app to
+	                 * be involved in this process.
+	                 */
+	                String exp = headers.getFirst("Expect");
+	                if (exp != null && exp.equalsIgnoreCase ("100-continue")) {
+	                    logReply (100, requestLine, null);
+	                    sendReply (
+	                        Code.HTTP_CONTINUE, false, null
+	                    );
+	                }
+	                /* uf is the list of filters seen/set by the user.
+	                 * sf is the list of filters established internally
+	                 * and which are not visible to the user. uc and sc
+	                 * are the corresponding Filter.Chains.
+	                 * They are linked together by a LinkHandler
+	                 * so that they can both be invoked in one call.
+	                 */
+	                List<Filter> sf = ctx.getSystemFilters();
+	                List<Filter> uf = ctx.getFilters();
+	
+	                Filter.Chain sc = new Filter.Chain(sf, ctx.getHandler());
+	                Filter.Chain uc = new Filter.Chain(uf, new LinkHandler (sc));
+	
+	                /* set up the two stream references */
+	                tx.getRequestBody();
+	                tx.getResponseBody();
+	                if (https) {
+	                    uc.doFilter (new HttpsExchangeImpl (tx));
+	                } else {
+	                    uc.doFilter (new HttpExchangeImpl (tx));
+	                }
+	
+	            } catch (IOException e1) {
+	                logger.log (Level.FINER, "ServerImpl.Exchange (1)", e1);
+	                closeConnection(connection);
+	            } catch (NumberFormatException e3) {
+	                reject (Code.HTTP_BAD_REQUEST,
+	                        requestLine, "NumberFormatException thrown");
+	            } catch (URISyntaxException e) {
+	                reject (Code.HTTP_BAD_REQUEST,
+	                        requestLine, "URISyntaxException thrown");
+	            } catch (Exception e4) {
+	                logger.log (Level.FINER, "ServerImpl.Exchange (2)", e4);
+	                closeConnection(connection);
+	            }
             }
         }
 

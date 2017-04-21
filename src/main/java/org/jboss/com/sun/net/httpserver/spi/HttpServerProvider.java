@@ -33,6 +33,7 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.ServiceLoader;
 import java.util.ServiceConfigurationError;
+import org.jboss.com.sun.net.httpserver.AJPServer;
 
 import org.jboss.com.sun.net.httpserver.HttpServer;
 import org.jboss.com.sun.net.httpserver.HttpsServer;
@@ -44,6 +45,8 @@ import org.jboss.com.sun.net.httpserver.HttpsServer;
  * See {@link #provider()} for how providers are found and loaded.
  */
 public abstract class HttpServerProvider {
+
+    public abstract AJPServer createAJPServer(InetSocketAddress addr, int backlog, Map<String, String> configuration) throws IOException;
 
     /**
      * creates a HttpServer from this provider
